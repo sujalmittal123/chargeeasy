@@ -64,12 +64,10 @@ jobs:
             echo "✓ Found KEYSTORE_BASE64 secret in GitHub Secrets. Decoding production release keystore..."
             echo "$KEYSTORE_BASE64" | base64 -d > android/app/chargeeasy-release.jks
             
-            cat <<EOF > android/key.properties
-            storePassword=${KEYSTORE_PASSWORD:-ChargeEasy@2026!ReleaseKey}
-            keyPassword=${KEY_PASSWORD:-ChargeEasy@2026!ReleaseKey}
-            keyAlias=${KEY_ALIAS:-chargeeasy}
-            storeFile=chargeeasy-release.jks
-            EOF
+            echo "storePassword=${KEYSTORE_PASSWORD:-ChargeEasy@2026!ReleaseKey}" > android/key.properties
+            echo "keyPassword=${KEY_PASSWORD:-ChargeEasy@2026!ReleaseKey}" >> android/key.properties
+            echo "keyAlias=${KEY_ALIAS:-chargeeasy}" >> android/key.properties
+            echo "storeFile=chargeeasy-release.jks" >> android/key.properties
             echo "✓ Configured production release signing key.properties"
           else
             echo "⚠️ ======================================================================"
@@ -85,12 +83,10 @@ jobs:
               -storepass "ChargeEasy@2026!ReleaseKey" -keypass "ChargeEasy@2026!ReleaseKey" \
               -dname "CN=ChargeEasy, OU=CI, O=ChargeEasy, L=Bengaluru, ST=Karnataka, C=IN"
               
-            cat <<EOF > android/key.properties
-            storePassword=ChargeEasy@2026!ReleaseKey
-            keyPassword=ChargeEasy@2026!ReleaseKey
-            keyAlias=chargeeasy
-            storeFile=chargeeasy-release.jks
-            EOF
+            echo "storePassword=ChargeEasy@2026!ReleaseKey" > android/key.properties
+            echo "keyPassword=ChargeEasy@2026!ReleaseKey" >> android/key.properties
+            echo "keyAlias=chargeeasy" >> android/key.properties
+            echo "storeFile=chargeeasy-release.jks" >> android/key.properties
             echo "✓ Fallback keystore created. Release build will proceed successfully."
           fi
           ls -la android/app/chargeeasy-release.jks
