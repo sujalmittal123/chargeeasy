@@ -291,7 +291,7 @@ class SettingsScreen extends ConsumerWidget {
               showAboutDialog(
                 context: context,
                 applicationName: 'ChargeEasy',
-                applicationVersion: '1.0.0 (Build 1)',
+                applicationVersion: '1.0.1 (Build 2)',
                 applicationLegalese: '© 2026 ChargeEasy Team. Pure offline-first battery analytics.',
                 children: [
                   const SizedBox(height: 12),

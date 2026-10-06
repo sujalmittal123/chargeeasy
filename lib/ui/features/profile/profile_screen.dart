@@ -289,7 +289,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             const SizedBox(height: 48),
             Text(
-              'ChargeEasy v1.0 • Offline-First Battery Analytics',
+              'ChargeEasy v1.0.1 • Offline-First Battery Analytics',
               style: TextStyle(
                 fontSize: 11,
                 color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
