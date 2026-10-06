@@ -1,0 +1,104 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+android {
+    namespace "chargeeasy.app"
+    compileSdkVersion 36
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        applicationId "chargeeasy.app"
+        minSdkVersion 26
+        targetSdkVersion 34
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+
+    signingConfigs {
+        release {
+            def keyAliasVal = keystoreProperties['keyAlias'] ?: System.getenv('KEY_ALIAS')
+            def keyPasswordVal = keystoreProperties['keyPassword'] ?: System.getenv('KEY_PASSWORD')
+            def storeFilePath = keystoreProperties['storeFile'] ?: System.getenv('KEYSTORE_FILE')
+            def storePasswordVal = keystoreProperties['storePassword'] ?: System.getenv('KEYSTORE_PASSWORD')
+
+            if (storeFilePath) {
+                def keystoreFile = file(storeFilePath)
+                if (!keystoreFile.exists()) {
+                    keystoreFile = rootProject.file(storeFilePath)
+                }
+                if (keystoreFile.exists()) {
+                    keyAlias keyAliasVal
+                    keyPassword keyPasswordVal
+                    storeFile keystoreFile
+                    storePassword storePasswordVal
+                }
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            def releaseConfig = signingConfigs.findByName("release")
+            if (releaseConfig != null && releaseConfig.storeFile != null && releaseConfig.storeFile.exists()) {
+                signingConfig releaseConfig
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
+    }
+    
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.work:work-runtime-ktx:2.8.1'
+}

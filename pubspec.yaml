@@ -1,0 +1,57 @@
+name: voltiq
+description: ChargeEasy - Advanced Battery & Charging Analytics
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  go_router: ^13.2.0
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.3
+  path: ^1.9.0
+  fl_chart: ^0.68.0
+  flutter_local_notifications: ^17.2.2
+  home_widget: ^0.4.1
+  permission_handler: ^11.3.1
+  in_app_purchase: ^3.1.13
+  share_plus: ^9.0.0
+  pdf: ^3.11.0
+  csv: ^6.0.0
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+  vibration: ^2.0.0
+  audioplayers: ^6.0.0
+  package_info_plus: ^8.0.0
+  device_info_plus: ^10.1.0
+  google_mobile_ads: ^5.1.0
+  equatable: ^2.0.5
+  intl: ^0.19.0
+  collection: ^1.18.0
+  rxdart: ^0.27.7
+  logger: ^2.4.0
+
+  get_it: any
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  drift_dev: ^2.18.0
+  build_runner: ^2.4.11
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.4.0
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/sounds/
+    - assets/images/
