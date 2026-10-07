@@ -1,4 +1,4 @@
-package chargeeasy.app
+package chargetracker.app
 
 import android.content.Context
 import androidx.work.Constraints
@@ -33,7 +33,7 @@ class WorkManagerHelper {
 class HealthSnapshotWorker(appContext: Context, workerParams: WorkerParameters) :
     Worker(appContext, workerParams) {
     override fun doWork(): Result {
-        val prefs = applicationContext.getSharedPreferences("ChargeEasyPrefs", Context.MODE_PRIVATE)
+        val prefs = applicationContext.getSharedPreferences("ChargeTrackerPrefs", Context.MODE_PRIVATE)
         prefs.edit().putLong("last_health_snapshot_time", System.currentTimeMillis()).apply()
         return Result.success()
     }

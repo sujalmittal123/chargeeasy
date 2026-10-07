@@ -36,7 +36,7 @@ final settingsRepositoryProvider = Provider<SettingsRepository>.internal(
 );
 
 typedef SettingsRepositoryRef = ProviderRef<SettingsRepository>;
-String _$settingsHash() => r'76b9c117dc61838d6144ad2737ecf3a017d725fc';
+String _$settingsHash() => r'70ec02e7129611dac403ec0c04f00be5399b03b5';
 
 /// See also [Settings].
 @ProviderFor(Settings)

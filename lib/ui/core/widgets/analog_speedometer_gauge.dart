@@ -77,12 +77,17 @@ class _AnalogSpeedometerGaugeState extends State<AnalogSpeedometerGauge>
     final subtextColor = isDark ? Colors.grey.shade400 : const Color(0xFF64748B);
 
     final displayMa = widget.currentMa.toInt();
-    final rateLabel = widget.isCharging
-        ? 'Charging at ${widget.dischargeRatePerHour.toStringAsFixed(0)}% per hour'
-        : 'Discharging at ${widget.dischargeRatePerHour.toStringAsFixed(0)}% per hour';
-    final timeLabel = widget.isCharging
-        ? 'Estimated time to 100% : ${_formatDuration(widget.estimatedTime)}'
-        : 'Estimated backup time : ${_formatDuration(widget.estimatedTime)}';
+    final rateLabel = widget.dischargeRatePerHour <= 0
+        ? (widget.isCharging ? 'Charging: Calculating rate...' : 'Discharging: Calculating rate...')
+        : (widget.isCharging
+            ? 'Charging at ${widget.dischargeRatePerHour.toStringAsFixed(1)}% per hour'
+            : 'Discharging at ${widget.dischargeRatePerHour.toStringAsFixed(1)}% per hour');
+
+    final timeLabel = widget.estimatedTime.inMinutes <= 0
+        ? (widget.isCharging ? 'Estimated time to 100% : Calculating...' : 'Estimated backup time : Calculating...')
+        : (widget.isCharging
+            ? 'Estimated time to 100% : ${_formatDuration(widget.estimatedTime)}'
+            : 'Estimated backup time : ${_formatDuration(widget.estimatedTime)}');
 
     return Container(
       width: double.infinity,
@@ -92,7 +97,7 @@ class _AnalogSpeedometerGaugeState extends State<AnalogSpeedometerGauge>
         children: [
           // Speedometer Dial Canvas
           SizedBox(
-            height: 170,
+            height: 175,
             width: 320,
             child: AnimatedBuilder(
               animation: _needleAnimation,
@@ -107,6 +112,7 @@ class _AnalogSpeedometerGaugeState extends State<AnalogSpeedometerGauge>
               },
             ),
           ),
+          const SizedBox(height: 4),
 
           // Main numeric current readout
           Text(
@@ -116,8 +122,8 @@ class _AnalogSpeedometerGaugeState extends State<AnalogSpeedometerGauge>
               fontWeight: FontWeight.w900,
               letterSpacing: -1,
               color: widget.isCharging
-                  ? const Color(0xFF00C853)
-                  : const Color(0xFF1E3A8A), // Vibrant navy like reference or green
+                  ? const Color(0xFF00E676)
+                  : const Color(0xFFFF5252),
             ),
           ),
           Text(
@@ -150,12 +156,14 @@ class _AnalogSpeedometerGaugeState extends State<AnalogSpeedometerGauge>
           ),
           const SizedBox(height: 12),
 
-          // Capacity mAh Progress Bar (like Reference App: 1974 mAh / 4100 mAh)
+          // Capacity mAh Progress Bar
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${widget.currentMah} mAh / ${widget.maxMah} mAh',
+                (widget.currentMah > 0 && widget.maxMah > 0)
+                    ? '${widget.currentMah} mAh / ${widget.maxMah} mAh'
+                    : (widget.maxMah > 0 ? '-- / ${widget.maxMah} mAh' : '-- mAh'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -168,16 +176,16 @@ class _AnalogSpeedometerGaugeState extends State<AnalogSpeedometerGauge>
                 child: SizedBox(
                   height: 10,
                   child: LinearProgressIndicator(
-                    value: (widget.maxMah > 0)
+                    value: (widget.maxMah > 0 && widget.currentMah > 0)
                         ? (widget.currentMah / widget.maxMah).clamp(0.0, 1.0)
-                        : 0.5,
+                        : (widget.percent > 0 ? widget.percent / 100.0 : 0.0),
                     backgroundColor: isDark
                         ? Colors.grey.shade800
                         : const Color(0xFFE2E8F0),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       widget.isCharging
-                          ? const Color(0xFF00C853)
-                          : const Color(0xFF38BDF8),
+                          ? const Color(0xFF00E676)
+                          : const Color(0xFFFF5252),
                     ),
                   ),
                 ),
@@ -240,7 +248,18 @@ class _SpeedometerPainter extends CustomPainter {
 
     canvas.drawArc(rect, startAngle + sweepAngle * 0.52, sweepAngle * 0.48, false, greenPaint);
 
-    // 4. Draw Scale Markings (-2000.0 on left, 2000.0 on right, 0.0 at center)
+    // 4. Calculate dynamic device-adaptive gauge scale
+    final absMa = currentMa.abs();
+    double maxScale = 2000.0;
+    if (absMa > 5000) {
+      maxScale = 8000.0;
+    } else if (absMa > 3500) {
+      maxScale = 5000.0;
+    } else if (absMa > 2000) {
+      maxScale = 3500.0;
+    }
+
+    // Draw Scale Markings (-maxScale on left, +maxScale on right, 0.0 at center)
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     void drawTickLabel(String text, double angleFraction, {Offset offset = Offset.zero}) {
@@ -261,33 +280,14 @@ class _SpeedometerPainter extends CustomPainter {
       textPainter.paint(canvas, Offset(x - textPainter.width / 2, y - textPainter.height / 2));
     }
 
-    drawTickLabel('-2000.0', 0.05, offset: const Offset(14, 4));
+    drawTickLabel('-${maxScale.toStringAsFixed(1)}', 0.05, offset: const Offset(14, 4));
     drawTickLabel('0.0', 0.50, offset: const Offset(0, -6));
-    drawTickLabel('+2000.0', 0.95, offset: const Offset(-14, 4));
+    drawTickLabel('+${maxScale.toStringAsFixed(1)}', 0.95, offset: const Offset(-14, 4));
 
-    // 5. Calculate Needle Angle
-    // Range is -2000 to +2000 mA
-    final clampedMa = currentMa.clamp(-2500.0, 2500.0);
-    // fraction from 0.0 (-2500) to 1.0 (+2500)
-    final fraction = (clampedMa + 2500.0) / 5000.0;
+    // 5. Calculate Needle Angle dynamically adapted to maxScale
+    final clampedMa = currentMa.clamp(-maxScale, maxScale);
+    final fraction = (clampedMa + maxScale) / (2.0 * maxScale);
     final needleAngle = startAngle + sweepAngle * fraction;
-
-    // Draw value badge directly near needle pivot
-    final badgeValue = currentMa.toInt();
-    final badgeText = '$badgeValue';
-    textPainter.text = TextSpan(
-      text: badgeText,
-      style: TextStyle(
-        color: isDark ? Colors.white70 : const Color(0xFF334155),
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(center.dx - textPainter.width / 2, center.dy - radius * 0.48),
-    );
 
     // 6. Draw Needle
     final needleLength = radius + 6;

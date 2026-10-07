@@ -63,7 +63,7 @@ class SettingsScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          settings.isPro ? 'PRO ACTIVATED' : 'GET PREMIUM',
+                          settings.isPro ? 'PRO ACTIVATED' : 'PREMIUM — COMING SOON',
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -74,7 +74,7 @@ class SettingsScreen extends ConsumerWidget {
                         Text(
                           settings.isPro
                               ? 'All features & ad-free experience unlocked'
-                              : 'Plans start from ₹79 · View all features',
+                              : 'View planned features & notify me',
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
@@ -94,8 +94,8 @@ class SettingsScreen extends ConsumerWidget {
             context,
             icon: Icons.account_circle,
             iconColor: const Color(0xFF3B82F6),
-            title: 'Profile',
-            subtitle: 'Sync telemetry & manage Google account',
+            title: 'Device Profile',
+            subtitle: '100% offline device profile · All data stored on-device',
             onTap: () => context.push('/profile'),
           ),
 
@@ -264,6 +264,25 @@ class SettingsScreen extends ConsumerWidget {
           ),
 
           const Divider(),
+          _buildSectionHeader('Walkthrough & Onboarding', context),
+          ListTile(
+            leading: const Icon(Icons.slideshow_outlined),
+            title: const Text('View Welcome Walkthrough'),
+            subtitle: const Text('Replay the 3-screen introduction guide'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/onboarding'),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.visibility_off_outlined),
+            title: const Text("Don't show intro on launch"),
+            subtitle: const Text('Skip introduction walkthrough automatically'),
+            value: settings.dontShowIntroAgain,
+            onChanged: (val) {
+              ref.read(settingsProvider.notifier).setDontShowIntroAgain(val);
+            },
+          ),
+
+          const Divider(),
           _buildSectionHeader('Data & Privacy', context),
           ListTile(
             leading: const Icon(Icons.file_download_outlined),
@@ -280,7 +299,7 @@ class SettingsScreen extends ConsumerWidget {
                 return;
               }
               final path = await ExportSessionsUseCase().exportToCsv(sessions);
-              await Share.shareXFiles([XFile(path)], text: 'ChargeEasy Battery Sessions CSV');
+              await Share.shareXFiles([XFile(path)], text: 'Charge Tracker Battery Sessions CSV');
             },
           ),
           ListTile(
@@ -290,12 +309,20 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () {
               showAboutDialog(
                 context: context,
-                applicationName: 'ChargeEasy',
+                applicationIcon: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 54,
+                    height: 54,
+                  ),
+                ),
+                applicationName: 'Charge Tracker',
                 applicationVersion: '1.0.1 (Build 2)',
-                applicationLegalese: '© 2026 ChargeEasy Team. Pure offline-first battery analytics.',
+                applicationLegalese: '© 2026 Charge Tracker Team. Pure offline-first battery analytics.',
                 children: [
                   const SizedBox(height: 12),
-                  const Text('ChargeEasy does not request the INTERNET permission. No battery stats, usage stats, or charging metrics are ever transmitted outside your device.'),
+                  const Text('Charge Tracker does not request the INTERNET permission. No battery stats, usage stats, or charging metrics are ever transmitted outside your device.'),
                 ],
               );
             },
@@ -479,13 +506,13 @@ class SettingsScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('• Xiaomi / Poco / MIUI:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('Security app → Manage Apps → ChargeEasy → Enable "Autostart" and set Battery Saver to "No restrictions".\n'),
+              Text('Security app → Manage Apps → Charge Tracker → Enable "Autostart" and set Battery Saver to "No restrictions".\n'),
               Text('• Samsung One UI:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('Settings → Apps → ChargeEasy → Battery → Select "Unrestricted".\n'),
+              Text('Settings → Apps → Charge Tracker → Battery → Select "Unrestricted".\n'),
               Text('• OnePlus / Realme / Oppo:', style: TextStyle(fontWeight: FontWeight.bold)),
               Text('Settings → Battery → More Battery Settings → App battery management → Allow background activity.\n'),
               Text('• Vivo / Funtouch OS:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('Settings → Battery → High background power consumption → Enable ChargeEasy.'),
+              Text('Settings → Battery → High background power consumption → Enable Charge Tracker.'),
             ],
           ),
         ),

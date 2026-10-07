@@ -29,3 +29,15 @@ Future<List<Session>> pagedSessions(
           limit: limit,
           offset: offset,
         );
+
+// ── Session detail ───────────────────────────────────────────────────────────
+@riverpod
+Future<Session?> sessionDetail(SessionDetailRef ref, int id) =>
+    ref.watch(sessionRepositoryProvider).getSessionById(id);
+
+// ── Session samples ──────────────────────────────────────────────────────────
+@riverpod
+Future<List<Sample>> sessionSamples(SessionSamplesRef ref, int sessionId) {
+  final db = ref.watch(appDatabaseProvider);
+  return db.sampleDao.getSamplesForSession(sessionId);
+}

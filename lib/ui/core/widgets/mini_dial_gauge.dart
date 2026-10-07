@@ -75,14 +75,16 @@ class MiniDialGaugeCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              valueText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: valueColor,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                valueText,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: valueColor,
+                ),
               ),
             ),
           ],
@@ -230,14 +232,16 @@ class MiniIconTelemetryCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              valueText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: valueColor,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                valueText,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: valueColor,
+                ),
               ),
             ),
           ],

@@ -32,6 +32,8 @@ class AppSettings {
   final bool currentSignPositive;
   final bool onboardingComplete;
   final bool isPro;
+  final bool dontShowIntroAgain;
+  final bool premiumNotifyMe;
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
@@ -47,6 +49,8 @@ class AppSettings {
     this.currentSignPositive = true,
     this.onboardingComplete = false,
     this.isPro = false,
+    this.dontShowIntroAgain = false,
+    this.premiumNotifyMe = false,
   });
 
   AppSettings copyWith({
@@ -63,6 +67,8 @@ class AppSettings {
     bool? currentSignPositive,
     bool? onboardingComplete,
     bool? isPro,
+    bool? dontShowIntroAgain,
+    bool? premiumNotifyMe,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -78,6 +84,8 @@ class AppSettings {
       currentSignPositive: currentSignPositive ?? this.currentSignPositive,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
       isPro: isPro ?? this.isPro,
+      dontShowIntroAgain: dontShowIntroAgain ?? this.dontShowIntroAgain,
+      premiumNotifyMe: premiumNotifyMe ?? this.premiumNotifyMe,
     );
   }
 }
@@ -100,6 +108,8 @@ class Settings extends _$Settings {
     final currentSignStr   = await repo.get('current_sign_positive') ?? 'true';
     final onboardingStr    = await repo.get('onboarding_complete') ?? 'false';
     final isProStr         = await repo.get('is_pro') ?? 'false';
+    final dontShowIntroStr = await repo.get('dont_show_intro_again') ?? 'false';
+    final notifyMeStr      = await repo.get('premium_notify_me') ?? 'false';
     final chargeLimEnabled = await repo.get('charge_limit_enabled') ?? 'true';
     final lowBattEnabled   = await repo.get('low_battery_enabled') ?? 'true';
     final guardModeStr     = await repo.get('guard_mode') ?? 'false';
@@ -136,6 +146,8 @@ class Settings extends _$Settings {
       currentSignPositive: currentSignStr == 'true',
       onboardingComplete: onboardingStr == 'true',
       isPro: isProStr == 'true',
+      dontShowIntroAgain: dontShowIntroStr == 'true',
+      premiumNotifyMe: notifyMeStr == 'true',
     );
   }
 
@@ -205,6 +217,18 @@ class Settings extends _$Settings {
     await ref.read(settingsRepositoryProvider).set('is_pro', isPro.toString());
     final current = state.valueOrNull ?? const AppSettings();
     state = AsyncData(current.copyWith(isPro: isPro));
+  }
+
+  Future<void> setDontShowIntroAgain(bool val) async {
+    await ref.read(settingsRepositoryProvider).set('dont_show_intro_again', val.toString());
+    final current = state.valueOrNull ?? const AppSettings();
+    state = AsyncData(current.copyWith(dontShowIntroAgain: val));
+  }
+
+  Future<void> setPremiumNotifyMe(bool val) async {
+    await ref.read(settingsRepositoryProvider).set('premium_notify_me', val.toString());
+    final current = state.valueOrNull ?? const AppSettings();
+    state = AsyncData(current.copyWith(premiumNotifyMe: val));
   }
 }
 

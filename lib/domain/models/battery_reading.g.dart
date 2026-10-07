@@ -16,6 +16,11 @@ _$BatteryReadingImpl _$$BatteryReadingImplFromJson(Map<String, dynamic> json) =>
       plugType: $enumDecode(_$PlugTypeEnumMap, json['plugType']),
       health: $enumDecode(_$BatteryHealthEnumMap, json['health']),
       timestamp: DateTime.parse(json['timestamp'] as String),
+      technology: json['technology'] as String? ?? 'Li-ion',
+      designCapacityMah: (json['designCapacityMah'] as num?)?.toInt() ?? 0,
+      chargeCounterUah: (json['chargeCounterUah'] as num?)?.toInt() ?? 0,
+      chargeTimeRemainingMs:
+          (json['chargeTimeRemainingMs'] as num?)?.toInt() ?? -1,
     );
 
 Map<String, dynamic> _$$BatteryReadingImplToJson(
@@ -29,6 +34,10 @@ Map<String, dynamic> _$$BatteryReadingImplToJson(
       'plugType': _$PlugTypeEnumMap[instance.plugType]!,
       'health': _$BatteryHealthEnumMap[instance.health]!,
       'timestamp': instance.timestamp.toIso8601String(),
+      'technology': instance.technology,
+      'designCapacityMah': instance.designCapacityMah,
+      'chargeCounterUah': instance.chargeCounterUah,
+      'chargeTimeRemainingMs': instance.chargeTimeRemainingMs,
     };
 
 const _$BatteryStatusEnumMap = {

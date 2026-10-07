@@ -33,20 +33,42 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error loading sessions: $err')),
         data: (sessions) {
-          // Compute summary metrics
-          final count = sessions.length;
-          final avgW = count > 0
-              ? (sessions.map((s) => s.avgW ?? 0).reduce((a, b) => a + b) / count)
-              : 18.5;
-          final totalDurMinutes = count > 0
+          // Compute summary metrics dynamically from DB
+          final totalCount = sessions.length;
+          final avgW = totalCount > 0
+              ? (sessions.map((s) => s.avgW ?? 0.0).reduce((a, b) => a + b) / totalCount)
+              : null;
+          final totalDurMinutes = totalCount > 0
               ? sessions.fold<int>(
                   0,
                   (sum, s) =>
                       sum +
                       (((s.endTs ?? s.startTs) - s.startTs) ~/ 60000),
                 )
-              : 75;
-          final avgDurMins = count > 0 ? (totalDurMinutes ~/ count) : 48;
+              : null;
+          final avgDurMins = (totalCount > 0 && totalDurMinutes != null)
+              ? (totalDurMinutes ~/ totalCount)
+              : null;
+
+          final sessionsStat = totalCount > 0 ? '$totalCount' : '--';
+          final avgSpeedStat = avgW != null && avgW > 0 ? '${avgW.toStringAsFixed(1)} W' : '--';
+          final avgTimeStat = avgDurMins != null && avgDurMins > 0 ? '${avgDurMins}m' : '--';
+
+          // Filter sessions based on selected chip
+          final filteredSessions = sessions.where((s) {
+            switch (_selectedFilterIndex) {
+              case 1: // Fast
+                return (s.peakW ?? 0) >= 15.0 || (s.avgW ?? 0) >= 15.0;
+              case 2: // Wired
+                final c = (s.chargerType).toLowerCase();
+                return c.contains('ac') || c.contains('usb') || c.contains('wired');
+              case 3: // Wireless
+                final c = (s.chargerType).toLowerCase();
+                return c.contains('wireless');
+              default:
+                return true;
+            }
+          }).toList();
 
           return Column(
             children: [
@@ -96,9 +118,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _SummaryItem(title: 'Sessions', value: '$count'),
-                    _SummaryItem(title: 'Avg Speed', value: '${avgW.toStringAsFixed(1)} W'),
-                    _SummaryItem(title: 'Avg Time', value: '${avgDurMins}m'),
+                    _SummaryItem(title: 'Sessions', value: sessionsStat),
+                    _SummaryItem(title: 'Avg Speed', value: avgSpeedStat),
+                    _SummaryItem(title: 'Avg Time', value: avgTimeStat),
                   ],
                 ),
               ),
@@ -106,31 +128,38 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
               // Sessions List or Empty State
               Expanded(
-                child: sessions.isEmpty
+                child: filteredSessions.isEmpty
                     ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.battery_charging_full, size: 64, color: Colors.grey.shade400),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No charging sessions recorded yet',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Plug in your charger to start automatic session tracking.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.battery_charging_full, size: 64, color: Colors.grey.shade400),
+                              const SizedBox(height: 16),
+                              Text(
+                                totalCount == 0
+                                    ? 'No charging sessions recorded yet'
+                                    : 'No sessions match this filter',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                totalCount == 0
+                                    ? 'Plug in your charger to start tracking.'
+                                    : 'Try selecting a different filter above.',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         ),
                       )
                     : ListView.separated(
-                        itemCount: sessions.length,
+                        itemCount: filteredSessions.length,
                         separatorBuilder: (context, index) => const Divider(height: 1),
                         itemBuilder: (context, index) {
-                          final session = sessions[index];
+                          final session = filteredSessions[index];
                           final startDate = DateTime.fromMillisecondsSinceEpoch(session.startTs);
                           final dateStr = DateFormat('MMM d, h:mm a').format(startDate);
                           final durMs = (session.endTs ?? session.startTs) - session.startTs;

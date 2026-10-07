@@ -69,6 +69,41 @@ void main() {
       );
       expect(duration, isNull);
     });
+
+    test('executeFromCurrent estimates remaining discharge time from live mA and mAh', () {
+      // 50% on a 5000mAh battery = 2500mAh remaining
+      // Discharging at -500mA -> 5 hours = 300 minutes
+      final duration = useCase.executeFromCurrent(
+        isCharging: false,
+        currentPercent: 50,
+        currentMa: -500,
+        capacityMah: 5000,
+      );
+      expect(duration, isNotNull);
+      expect(duration!.inMinutes, equals(300));
+    });
+
+    test('executeFromCurrent estimates remaining charge time from incoming mA and mAh', () {
+      // 80% on a 5000mAh battery -> 20% needed = 1000mAh needed
+      // Charging at +2000mA -> 0.5 hours = 30 minutes
+      final duration = useCase.executeFromCurrent(
+        isCharging: true,
+        currentPercent: 80,
+        currentMa: 2000,
+        capacityMah: 5000,
+      );
+      expect(duration, isNotNull);
+      expect(duration!.inMinutes, equals(30));
+    });
+
+    test('calculateRatePerHour computes dynamic percentage rate accurately', () {
+      // 750mA draw on a 5000mAh battery = 15.0% per hour
+      final rate = useCase.calculateRatePerHour(
+        currentMa: -750,
+        capacityMah: 5000,
+      );
+      expect(rate, closeTo(15.0, 0.01));
+    });
   });
 
   group('EstimateBatteryHealthUseCase', () {

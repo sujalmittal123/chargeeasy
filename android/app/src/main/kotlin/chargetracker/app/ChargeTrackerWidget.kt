@@ -1,4 +1,4 @@
-package chargeeasy.app
+package chargetracker.app
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -8,7 +8,7 @@ import android.widget.RemoteViews
 import android.app.PendingIntent
 import android.content.SharedPreferences
 
-open class ChargeEasyWidget : AppWidgetProvider() {
+open class ChargeTrackerWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
@@ -17,7 +17,7 @@ open class ChargeEasyWidget : AppWidgetProvider() {
 
     companion object {
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
-            val prefs = context.getSharedPreferences("ChargeEasyPrefs", Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences("ChargeTrackerPrefs", Context.MODE_PRIVATE)
             val percent = prefs.getInt("last_percent", 0)
             val current = prefs.getInt("last_current", 0)
 
@@ -34,10 +34,10 @@ open class ChargeEasyWidget : AppWidgetProvider() {
     }
 }
 
-class ChargeEasyWidgetLarge : AppWidgetProvider() {
+class ChargeTrackerWidgetLarge : AppWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         for (appWidgetId in appWidgetIds) {
-            val prefs = context.getSharedPreferences("ChargeEasyPrefs", Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences("ChargeTrackerPrefs", Context.MODE_PRIVATE)
             val percent = prefs.getInt("last_percent", 0)
             val current = prefs.getInt("last_current", 0)
             val watts = prefs.getFloat("last_watts", 0f)

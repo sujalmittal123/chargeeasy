@@ -5,7 +5,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/widgets/stat_card.dart';
 import '../../../providers/session_provider.dart';
-import '../../../domain/use_cases/ai_tips_engine.dart';
 import '../../../domain/use_cases/export_sessions.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -21,27 +20,72 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final sessionsAsync = ref.watch(sessionsProvider);
-    final sessions = sessionsAsync.valueOrNull ?? [];
+    final allSessions = sessionsAsync.valueOrNull ?? [];
 
-    // Compute metrics
-    final count = sessions.isNotEmpty ? sessions.length : 14;
-    final avgW = sessions.isNotEmpty
-        ? (sessions.map((s) => s.avgW ?? 0).reduce((a, b) => a + b) / sessions.length)
-        : 18.5;
-    final fullChargesCount = sessions.where((s) => (s.endPct ?? 0) >= 99).length;
-    final maxTemp = sessions.isNotEmpty
-        ? (sessions.map((s) => s.maxTemp ?? 0).reduce((a, b) => a > b ? a : b))
-        : 37.2;
+    final now = DateTime.now();
 
-    // Run rule-based on-device AI tips engine
-    final aiTips = AiTipsEngineUseCase().execute(
-      avgTempC: maxTemp,
-      timesChargedTo100In7Days: fullChargesCount > 0 ? fullChargesCount : 6,
-      chargerScore: 68.0,
-      healthPct: 92.0,
-      avgChargeSpeedDropPct: 12.0,
-      peakTempC: 41.5,
-    );
+    // Filter sessions by period
+    final sessions = allSessions.where((s) {
+      final sDate = DateTime.fromMillisecondsSinceEpoch(s.startTs);
+      final diffDays = now.difference(sDate).inDays;
+      switch (_selectedPeriod) {
+        case 'This Week':
+          return diffDays >= 0 && diffDays < 7;
+        case 'Last Week':
+          return diffDays >= 7 && diffDays < 14;
+        case 'This Month':
+          return diffDays >= 0 && diffDays < 30;
+        case 'Last Month':
+          return diffDays >= 30 && diffDays < 60;
+        default:
+          return true;
+      }
+    }).toList();
+
+    // Compute metrics matching History
+    final count = sessions.length;
+    final avgW = count > 0
+        ? (sessions.map((s) => s.avgW ?? 0.0).reduce((a, b) => a + b) / count)
+        : null;
+    final fullChargesCount = sessions.where((s) => (s.endPct ?? s.startPct) >= 99).length;
+    final maxTemp = count > 0
+        ? (sessions.map((s) => s.maxTemp ?? 0.0).reduce((a, b) => a > b ? a : b))
+        : null;
+    final totalDurMins = count > 0
+        ? sessions.fold<int>(0, (sum, s) => sum + (((s.endTs ?? s.startTs) - s.startTs) ~/ 60000))
+        : null;
+    final avgDurMins = (count > 0 && totalDurMins != null) ? totalDurMins ~/ count : null;
+
+    // Daily charging sessions count for the period
+    final dayCounts = List<int>.filled(7, 0);
+    for (final s in sessions) {
+      final sDate = DateTime.fromMillisecondsSinceEpoch(s.startTs);
+      final weekdayIndex = (sDate.weekday - 1) % 7; // 0=Mon .. 6=Sun
+      dayCounts[weekdayIndex]++;
+    }
+    final maxDailyCount = dayCounts.reduce((a, b) => a > b ? a : b);
+
+    // Dynamic rule-based AI tips from actual stats
+    final List<String> aiTips = [];
+    if (count == 0) {
+      aiTips.add('No charging sessions recorded for $_selectedPeriod. Plug in to generate battery efficiency recommendations.');
+    } else {
+      if (maxTemp != null && maxTemp > 39.0) {
+        aiTips.add('Peak temperature reached ${maxTemp.toStringAsFixed(1)}°C. Charging while gaming or under heavy CPU load causes thermal degradation; consider charging when idle.');
+      }
+      if (fullChargesCount >= 4) {
+        aiTips.add('You charged to 100% $fullChargesCount times. Capping daily charge at 80% can double lithium-ion cell longevity.');
+      }
+      if (avgW != null && avgW >= 25.0) {
+        aiTips.add('High-speed fast charging active (${avgW.toStringAsFixed(1)} W avg). For overnight charging, standard charging preserves chemistry better.');
+      }
+      if (avgDurMins != null && avgDurMins > 120) {
+        aiTips.add('Average session duration is ${avgDurMins}m. Leaving phone connected long after full causes trickle-charge degradation.');
+      }
+      if (aiTips.isEmpty) {
+        aiTips.add('Battery metrics look healthy! Maintaining charging cycles between 20% and 80% offers optimal cell health.');
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -52,8 +96,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             tooltip: 'Export PDF Report',
             onPressed: () async {
               try {
-                final pdfPath = await ExportSessionsUseCase().exportToPdf(sessions);
-                await Share.shareXFiles([XFile(pdfPath)], text: 'ChargeEasy Battery Analytics PDF Report');
+                final pdfPath = await ExportSessionsUseCase().exportToPdf(allSessions);
+                await Share.shareXFiles([XFile(pdfPath)], text: 'Charge Tracker Battery Analytics PDF Report');
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -68,8 +112,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             tooltip: 'Export CSV',
             onPressed: () async {
               try {
-                final csvPath = await ExportSessionsUseCase().exportToCsv(sessions);
-                await Share.shareXFiles([XFile(csvPath)], text: 'ChargeEasy Battery Sessions CSV');
+                final csvPath = await ExportSessionsUseCase().exportToCsv(allSessions);
+                await Share.shareXFiles([XFile(csvPath)], text: 'Charge Tracker Battery Sessions CSV');
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -100,7 +144,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // 4 Metric cards
+          // 4 Metric cards matching History
           GridView.count(
             shrinkWrap: true,
             crossAxisCount: 2,
@@ -109,10 +153,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             childAspectRatio: 1.5,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              StatCard(icon: Icons.history, label: 'Sessions Logged', value: '$count', unit: ''),
-              StatCard(icon: Icons.speed, label: 'Avg Charge Power', value: avgW.toStringAsFixed(1), unit: 'W'),
-              StatCard(icon: Icons.battery_full, label: 'Charged to 100%', value: '$fullChargesCount', unit: 'times'),
-              StatCard(icon: Icons.thermostat, label: 'Peak Temp', value: maxTemp.toStringAsFixed(1), unit: '°C'),
+              StatCard(
+                icon: Icons.history,
+                label: 'Sessions Logged',
+                value: count > 0 ? '$count' : '--',
+                unit: '',
+              ),
+              StatCard(
+                icon: Icons.speed,
+                label: 'Avg Charge Power',
+                value: avgW != null && avgW > 0 ? avgW.toStringAsFixed(1) : '--',
+                unit: avgW != null && avgW > 0 ? 'W' : '',
+              ),
+              StatCard(
+                icon: Icons.battery_full,
+                label: 'Charged to 100%',
+                value: count > 0 ? '$fullChargesCount' : '--',
+                unit: count > 0 ? 'times' : '',
+              ),
+              StatCard(
+                icon: Icons.thermostat,
+                label: 'Peak Temp',
+                value: maxTemp != null && maxTemp > 0 ? maxTemp.toStringAsFixed(1) : '--',
+                unit: maxTemp != null && maxTemp > 0 ? '°C' : '',
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -124,35 +188,60 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(height: 12),
           SizedBox(
             height: 180,
-            child: BarChart(
-              BarChartData(
-                gridData: const FlGridData(show: false),
-                borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (v, m) {
-                        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                        if (v >= 0 && v < 7) return Text(days[v.toInt()], style: const TextStyle(fontSize: 11));
-                        return const Text('');
-                      },
+            child: count == 0
+                ? const Center(
+                    child: Text(
+                      'No session data for this period.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : BarChart(
+                    BarChartData(
+                      gridData: const FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                      maxY: (maxDailyCount < 4 ? 4 : maxDailyCount + 1).toDouble(),
+                      titlesData: FlTitlesData(
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 24,
+                            getTitlesWidget: (v, _) => Text(
+                              '${v.toInt()}',
+                              style: const TextStyle(fontSize: 10, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (v, m) {
+                              const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                              if (v >= 0 && v < 7) {
+                                return Text(days[v.toInt()], style: const TextStyle(fontSize: 11));
+                              }
+                              return const Text('');
+                            },
+                          ),
+                        ),
+                      ),
+                      barGroups: List.generate(
+                        7,
+                        (i) => BarChartGroupData(
+                          x: i,
+                          barRods: [
+                            BarChartRodData(
+                              toY: dayCounts[i].toDouble(),
+                              color: const Color(0xFF00E5FF),
+                              width: 14,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                barGroups: [
-                  BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 2, color: const Color(0xFF00E5FF))]),
-                  BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 3, color: const Color(0xFF00E5FF))]),
-                  BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 1, color: const Color(0xFF00E5FF))]),
-                  BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: 4, color: const Color(0xFF00E5FF))]),
-                  BarChartGroupData(x: 4, barRods: [BarChartRodData(toY: 2, color: const Color(0xFF00E5FF))]),
-                  BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: 5, color: const Color(0xFF00E5FF))]),
-                  BarChartGroupData(x: 6, barRods: [BarChartRodData(toY: 3, color: const Color(0xFF00E5FF))]),
-                ],
-              ),
-            ),
           ),
           const SizedBox(height: 24),
 

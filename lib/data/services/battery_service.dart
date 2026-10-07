@@ -5,9 +5,9 @@ import '../../domain/models/app_drain_info.dart';
 
 class BatteryService {
   static const EventChannel _eventChannel =
-      EventChannel('chargeeasy.app/battery_stream');
+      EventChannel('chargetracker.app/battery_stream');
   static const MethodChannel _methodChannel =
-      MethodChannel('chargeeasy.app/battery_commands');
+      MethodChannel('chargetracker.app/battery_commands');
 
   // ── EventChannel stream ───────────────────────────────────────────────────
   Stream<BatteryReading> get batteryStream {
@@ -26,17 +26,27 @@ class BatteryService {
       final healthInt = (m['health'] as int?) ?? 1;
       final health = _parseHealth(healthInt);
 
+      final technology = (m['technology'] as String?) ?? 'Li-ion';
+      final designCapacityMah = (m['designCapacityMah'] as int?) ?? 0;
+      final chargeCounterUah = (m['chargeCounterUah'] as int?) ?? 0;
+      final chargeTimeRemainingMs = (m['chargeTimeRemainingMs'] as int?) ??
+          ((m['chargeTimeRemainingMs'] as num?)?.toInt() ?? -1);
+
       return BatteryReading(
-        currentMa:    (m['currentMa'] as num?)?.toDouble() ?? 0.0,
-        voltageMv:    (m['voltageMv'] as int?) ?? 0,
-        temperatureC: (m['temperatureC'] as num?)?.toDouble() ?? 0.0,
-        percent:      (m['percent'] as int?) ?? 0,
-        status:       status,
-        plugType:     plugType,
-        health:       health,
-        timestamp:    DateTime.fromMillisecondsSinceEpoch(
-                          (m['timestamp'] as int?) ??
-                          DateTime.now().millisecondsSinceEpoch,),
+        currentMa:              (m['currentMa'] as num?)?.toDouble() ?? 0.0,
+        voltageMv:              (m['voltageMv'] as int?) ?? 0,
+        temperatureC:           (m['temperatureC'] as num?)?.toDouble() ?? 0.0,
+        percent:                (m['percent'] as int?) ?? 0,
+        status:                 status,
+        plugType:               plugType,
+        health:                 health,
+        technology:             technology.isNotEmpty ? technology : 'Li-ion',
+        designCapacityMah:      designCapacityMah > 0 ? designCapacityMah : 0,
+        chargeCounterUah:       chargeCounterUah,
+        chargeTimeRemainingMs:  chargeTimeRemainingMs,
+        timestamp:              DateTime.fromMillisecondsSinceEpoch(
+                                  (m['timestamp'] as int?) ??
+                                  DateTime.now().millisecondsSinceEpoch,),
       );
     });
   }
@@ -45,11 +55,17 @@ class BatteryService {
   Future<int> getDesignCapacity() async =>
       await _methodChannel.invokeMethod<int>('getDesignCapacity') ?? -1;
 
+  Future<bool> isForegroundServiceRunning() async =>
+      await _methodChannel.invokeMethod<bool>('isForegroundServiceRunning') ?? false;
+
   Future<void> startForegroundService() =>
       _methodChannel.invokeMethod('startForegroundService');
 
   Future<void> stopForegroundService() =>
       _methodChannel.invokeMethod('stopForegroundService');
+
+  Future<bool> toggleManualTracking() async =>
+      await _methodChannel.invokeMethod<bool>('toggleManualTracking') ?? false;
 
   Future<void> setGuardMode(bool enabled) =>
       _methodChannel.invokeMethod('setGuardMode', enabled);

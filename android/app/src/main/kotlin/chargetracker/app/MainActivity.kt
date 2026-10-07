@@ -1,4 +1,4 @@
-package chargeeasy.app
+package chargetracker.app
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

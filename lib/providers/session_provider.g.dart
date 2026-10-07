@@ -201,5 +201,262 @@ class _PagedSessionsProviderElement
   @override
   int get offset => (origin as PagedSessionsProvider).offset;
 }
+
+String _$sessionDetailHash() => r'd17a8eda2930f8a0fea625102df1adbc2ad98929';
+
+/// See also [sessionDetail].
+@ProviderFor(sessionDetail)
+const sessionDetailProvider = SessionDetailFamily();
+
+/// See also [sessionDetail].
+class SessionDetailFamily extends Family<AsyncValue<Session?>> {
+  /// See also [sessionDetail].
+  const SessionDetailFamily();
+
+  /// See also [sessionDetail].
+  SessionDetailProvider call(
+    int id,
+  ) {
+    return SessionDetailProvider(
+      id,
+    );
+  }
+
+  @override
+  SessionDetailProvider getProviderOverride(
+    covariant SessionDetailProvider provider,
+  ) {
+    return call(
+      provider.id,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'sessionDetailProvider';
+}
+
+/// See also [sessionDetail].
+class SessionDetailProvider extends AutoDisposeFutureProvider<Session?> {
+  /// See also [sessionDetail].
+  SessionDetailProvider(
+    int id,
+  ) : this._internal(
+          (ref) => sessionDetail(
+            ref as SessionDetailRef,
+            id,
+          ),
+          from: sessionDetailProvider,
+          name: r'sessionDetailProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$sessionDetailHash,
+          dependencies: SessionDetailFamily._dependencies,
+          allTransitiveDependencies:
+              SessionDetailFamily._allTransitiveDependencies,
+          id: id,
+        );
+
+  SessionDetailProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.id,
+  }) : super.internal();
+
+  final int id;
+
+  @override
+  Override overrideWith(
+    FutureOr<Session?> Function(SessionDetailRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: SessionDetailProvider._internal(
+        (ref) => create(ref as SessionDetailRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        id: id,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<Session?> createElement() {
+    return _SessionDetailProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SessionDetailProvider && other.id == id;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, id.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin SessionDetailRef on AutoDisposeFutureProviderRef<Session?> {
+  /// The parameter `id` of this provider.
+  int get id;
+}
+
+class _SessionDetailProviderElement
+    extends AutoDisposeFutureProviderElement<Session?> with SessionDetailRef {
+  _SessionDetailProviderElement(super.provider);
+
+  @override
+  int get id => (origin as SessionDetailProvider).id;
+}
+
+String _$sessionSamplesHash() => r'14460718a5ee2a33a8e3d5727342bc2447e242c6';
+
+/// See also [sessionSamples].
+@ProviderFor(sessionSamples)
+const sessionSamplesProvider = SessionSamplesFamily();
+
+/// See also [sessionSamples].
+class SessionSamplesFamily extends Family<AsyncValue<List<Sample>>> {
+  /// See also [sessionSamples].
+  const SessionSamplesFamily();
+
+  /// See also [sessionSamples].
+  SessionSamplesProvider call(
+    int sessionId,
+  ) {
+    return SessionSamplesProvider(
+      sessionId,
+    );
+  }
+
+  @override
+  SessionSamplesProvider getProviderOverride(
+    covariant SessionSamplesProvider provider,
+  ) {
+    return call(
+      provider.sessionId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'sessionSamplesProvider';
+}
+
+/// See also [sessionSamples].
+class SessionSamplesProvider extends AutoDisposeFutureProvider<List<Sample>> {
+  /// See also [sessionSamples].
+  SessionSamplesProvider(
+    int sessionId,
+  ) : this._internal(
+          (ref) => sessionSamples(
+            ref as SessionSamplesRef,
+            sessionId,
+          ),
+          from: sessionSamplesProvider,
+          name: r'sessionSamplesProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$sessionSamplesHash,
+          dependencies: SessionSamplesFamily._dependencies,
+          allTransitiveDependencies:
+              SessionSamplesFamily._allTransitiveDependencies,
+          sessionId: sessionId,
+        );
+
+  SessionSamplesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.sessionId,
+  }) : super.internal();
+
+  final int sessionId;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<Sample>> Function(SessionSamplesRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: SessionSamplesProvider._internal(
+        (ref) => create(ref as SessionSamplesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        sessionId: sessionId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<Sample>> createElement() {
+    return _SessionSamplesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SessionSamplesProvider && other.sessionId == sessionId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, sessionId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin SessionSamplesRef on AutoDisposeFutureProviderRef<List<Sample>> {
+  /// The parameter `sessionId` of this provider.
+  int get sessionId;
+}
+
+class _SessionSamplesProviderElement
+    extends AutoDisposeFutureProviderElement<List<Sample>>
+    with SessionSamplesRef {
+  _SessionSamplesProviderElement(super.provider);
+
+  @override
+  int get sessionId => (origin as SessionSamplesProvider).sessionId;
+}
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

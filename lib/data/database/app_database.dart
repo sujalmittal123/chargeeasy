@@ -19,6 +19,7 @@ class Sessions extends Table {
   IntColumn get endPct => integer().nullable()();
   RealColumn get avgW => real().nullable()();
   RealColumn get peakW => real().nullable()();
+  RealColumn get avgMa => real().nullable()();
   RealColumn get maxTemp => real().nullable()();
   IntColumn get chargerId => integer().nullable()();
   TextColumn get chargerType => text()();
@@ -72,7 +73,11 @@ class AppDatabase extends _$AppDatabase {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'chargeeasy_db.sqlite'));
+    final file = File(p.join(dbFolder.path, 'chargetracker_db.sqlite'));
+    final oldFile = File(p.join(dbFolder.path, 'chargeeasy_db.sqlite'));
+    if (!await file.exists() && await oldFile.exists()) {
+      await oldFile.rename(file.path);
+    }
     return NativeDatabase.createInBackground(file);
   });
 }

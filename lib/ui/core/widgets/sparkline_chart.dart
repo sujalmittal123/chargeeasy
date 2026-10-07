@@ -8,8 +8,16 @@ class SparklineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (dataPoints.isEmpty) {
-      return const SizedBox(height: 100, child: Center(child: Text('No data')));
+    if (dataPoints.length < 2) {
+      return const SizedBox(
+        height: 100,
+        child: Center(
+          child: Text(
+            'Collecting power samples...',
+            style: TextStyle(color: Colors.grey, fontSize: 13),
+          ),
+        ),
+      );
     }
 
     final spots = dataPoints.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList();
@@ -17,6 +25,11 @@ class SparklineChart extends StatelessWidget {
       Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
       Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
     ];
+
+    final minVal = dataPoints.reduce((a, b) => a < b ? a : b);
+    final maxVal = dataPoints.reduce((a, b) => a > b ? a : b);
+    final minY = (minVal == maxVal) ? (minVal > 1 ? minVal - 1 : 0.0) : minVal * 0.9;
+    final maxY = (minVal == maxVal) ? minVal + 1 : maxVal * 1.1;
 
     return SizedBox(
       height: 100,
@@ -27,8 +40,8 @@ class SparklineChart extends StatelessWidget {
           borderData: FlBorderData(show: false),
           minX: 0,
           maxX: (dataPoints.length - 1).toDouble(),
-          minY: dataPoints.reduce((a, b) => a < b ? a : b) * 0.9,
-          maxY: dataPoints.reduce((a, b) => a > b ? a : b) * 1.1,
+          minY: minY,
+          maxY: maxY,
           lineBarsData: [
             LineChartBarData(
               spots: spots,

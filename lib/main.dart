@@ -39,13 +39,13 @@ void main() async {
         // Provide the singleton DB instance to all Riverpod providers
         appDatabaseProvider.overrideWithValue(db),
       ],
-      child: const ChargeEasyApp(),
+      child: const ChargeTrackerApp(),
     ),
   );
 }
 
-class ChargeEasyApp extends ConsumerWidget {
-  const ChargeEasyApp({super.key});
+class ChargeTrackerApp extends ConsumerWidget {
+  const ChargeTrackerApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,7 +54,7 @@ class ChargeEasyApp extends ConsumerWidget {
     final themeMode = settingsAsync.valueOrNull?.themeMode ?? ThemeMode.system;
 
     return MaterialApp.router(
-      title: 'ChargeEasy',
+      title: 'Charge Tracker',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: appThemeMode == AppThemeMode.amoled

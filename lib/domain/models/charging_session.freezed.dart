@@ -27,6 +27,7 @@ mixin _$ChargingSession {
   int? get endPercent => throw _privateConstructorUsedError;
   double? get avgPowerW => throw _privateConstructorUsedError;
   double? get peakPowerW => throw _privateConstructorUsedError;
+  double? get avgMa => throw _privateConstructorUsedError;
   double? get maxTempC => throw _privateConstructorUsedError;
   int? get chargerId => throw _privateConstructorUsedError;
   String get chargerType => throw _privateConstructorUsedError;
@@ -51,6 +52,7 @@ abstract class $ChargingSessionCopyWith<$Res> {
       int? endPercent,
       double? avgPowerW,
       double? peakPowerW,
+      double? avgMa,
       double? maxTempC,
       int? chargerId,
       String chargerType});
@@ -76,6 +78,7 @@ class _$ChargingSessionCopyWithImpl<$Res, $Val extends ChargingSession>
     Object? endPercent = freezed,
     Object? avgPowerW = freezed,
     Object? peakPowerW = freezed,
+    Object? avgMa = freezed,
     Object? maxTempC = freezed,
     Object? chargerId = freezed,
     Object? chargerType = null,
@@ -109,6 +112,10 @@ class _$ChargingSessionCopyWithImpl<$Res, $Val extends ChargingSession>
           ? _value.peakPowerW
           : peakPowerW // ignore: cast_nullable_to_non_nullable
               as double?,
+      avgMa: freezed == avgMa
+          ? _value.avgMa
+          : avgMa // ignore: cast_nullable_to_non_nullable
+              as double?,
       maxTempC: freezed == maxTempC
           ? _value.maxTempC
           : maxTempC // ignore: cast_nullable_to_non_nullable
@@ -141,6 +148,7 @@ abstract class _$$ChargingSessionImplCopyWith<$Res>
       int? endPercent,
       double? avgPowerW,
       double? peakPowerW,
+      double? avgMa,
       double? maxTempC,
       int? chargerId,
       String chargerType});
@@ -164,6 +172,7 @@ class __$$ChargingSessionImplCopyWithImpl<$Res>
     Object? endPercent = freezed,
     Object? avgPowerW = freezed,
     Object? peakPowerW = freezed,
+    Object? avgMa = freezed,
     Object? maxTempC = freezed,
     Object? chargerId = freezed,
     Object? chargerType = null,
@@ -197,6 +206,10 @@ class __$$ChargingSessionImplCopyWithImpl<$Res>
           ? _value.peakPowerW
           : peakPowerW // ignore: cast_nullable_to_non_nullable
               as double?,
+      avgMa: freezed == avgMa
+          ? _value.avgMa
+          : avgMa // ignore: cast_nullable_to_non_nullable
+              as double?,
       maxTempC: freezed == maxTempC
           ? _value.maxTempC
           : maxTempC // ignore: cast_nullable_to_non_nullable
@@ -224,6 +237,7 @@ class _$ChargingSessionImpl implements _ChargingSession {
       this.endPercent,
       this.avgPowerW,
       this.peakPowerW,
+      this.avgMa,
       this.maxTempC,
       this.chargerId,
       required this.chargerType});
@@ -246,6 +260,8 @@ class _$ChargingSessionImpl implements _ChargingSession {
   @override
   final double? peakPowerW;
   @override
+  final double? avgMa;
+  @override
   final double? maxTempC;
   @override
   final int? chargerId;
@@ -254,7 +270,7 @@ class _$ChargingSessionImpl implements _ChargingSession {
 
   @override
   String toString() {
-    return 'ChargingSession(id: $id, startTime: $startTime, endTime: $endTime, startPercent: $startPercent, endPercent: $endPercent, avgPowerW: $avgPowerW, peakPowerW: $peakPowerW, maxTempC: $maxTempC, chargerId: $chargerId, chargerType: $chargerType)';
+    return 'ChargingSession(id: $id, startTime: $startTime, endTime: $endTime, startPercent: $startPercent, endPercent: $endPercent, avgPowerW: $avgPowerW, peakPowerW: $peakPowerW, avgMa: $avgMa, maxTempC: $maxTempC, chargerId: $chargerId, chargerType: $chargerType)';
   }
 
   @override
@@ -274,6 +290,7 @@ class _$ChargingSessionImpl implements _ChargingSession {
                 other.avgPowerW == avgPowerW) &&
             (identical(other.peakPowerW, peakPowerW) ||
                 other.peakPowerW == peakPowerW) &&
+            (identical(other.avgMa, avgMa) || other.avgMa == avgMa) &&
             (identical(other.maxTempC, maxTempC) ||
                 other.maxTempC == maxTempC) &&
             (identical(other.chargerId, chargerId) ||
@@ -293,6 +310,7 @@ class _$ChargingSessionImpl implements _ChargingSession {
       endPercent,
       avgPowerW,
       peakPowerW,
+      avgMa,
       maxTempC,
       chargerId,
       chargerType);
@@ -321,6 +339,7 @@ abstract class _ChargingSession implements ChargingSession {
       final int? endPercent,
       final double? avgPowerW,
       final double? peakPowerW,
+      final double? avgMa,
       final double? maxTempC,
       final int? chargerId,
       required final String chargerType}) = _$ChargingSessionImpl;
@@ -342,6 +361,8 @@ abstract class _ChargingSession implements ChargingSession {
   double? get avgPowerW;
   @override
   double? get peakPowerW;
+  @override
+  double? get avgMa;
   @override
   double? get maxTempC;
   @override

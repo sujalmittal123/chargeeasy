@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="chargeeasy.app">
+    package="chargetracker.app">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
@@ -12,12 +12,13 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <!-- No internet permission required: ChargeEasy is fully offline-first -->
+    <!-- No internet permission required: Charge Tracker is fully offline-first -->
 
     <application
-        android:label="ChargeEasy"
+        android:label="Charge Tracker"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round">
         
         <!-- Google Mobile Ads sample app ID (development & testing) -->
         <meta-data
@@ -53,7 +54,14 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".ChargeEasyWidget" android:exported="true">
+        <receiver android:name=".PowerConnectionReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".ChargeTrackerWidget" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -62,7 +70,7 @@
                 android:resource="@xml/widget_2x1_info" />
         </receiver>
 
-        <receiver android:name=".ChargeEasyWidgetLarge" android:exported="true">
+        <receiver android:name=".ChargeTrackerWidgetLarge" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

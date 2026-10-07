@@ -49,6 +49,11 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   late final GeneratedColumn<double> peakW = GeneratedColumn<double>(
       'peak_w', aliasedName, true,
       type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _avgMaMeta = const VerificationMeta('avgMa');
+  @override
+  late final GeneratedColumn<double> avgMa = GeneratedColumn<double>(
+      'avg_ma', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
   static const VerificationMeta _maxTempMeta =
       const VerificationMeta('maxTemp');
   @override
@@ -76,6 +81,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         endPct,
         avgW,
         peakW,
+        avgMa,
         maxTemp,
         chargerId,
         chargerType
@@ -121,6 +127,10 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       context.handle(
           _peakWMeta, peakW.isAcceptableOrUnknown(data['peak_w']!, _peakWMeta));
     }
+    if (data.containsKey('avg_ma')) {
+      context.handle(
+          _avgMaMeta, avgMa.isAcceptableOrUnknown(data['avg_ma']!, _avgMaMeta));
+    }
     if (data.containsKey('max_temp')) {
       context.handle(_maxTempMeta,
           maxTemp.isAcceptableOrUnknown(data['max_temp']!, _maxTempMeta));
@@ -160,6 +170,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
           .read(DriftSqlType.double, data['${effectivePrefix}avg_w']),
       peakW: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}peak_w']),
+      avgMa: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}avg_ma']),
       maxTemp: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}max_temp']),
       chargerId: attachedDatabase.typeMapping
@@ -183,6 +195,7 @@ class Session extends DataClass implements Insertable<Session> {
   final int? endPct;
   final double? avgW;
   final double? peakW;
+  final double? avgMa;
   final double? maxTemp;
   final int? chargerId;
   final String chargerType;
@@ -194,6 +207,7 @@ class Session extends DataClass implements Insertable<Session> {
       this.endPct,
       this.avgW,
       this.peakW,
+      this.avgMa,
       this.maxTemp,
       this.chargerId,
       required this.chargerType});
@@ -214,6 +228,9 @@ class Session extends DataClass implements Insertable<Session> {
     }
     if (!nullToAbsent || peakW != null) {
       map['peak_w'] = Variable<double>(peakW);
+    }
+    if (!nullToAbsent || avgMa != null) {
+      map['avg_ma'] = Variable<double>(avgMa);
     }
     if (!nullToAbsent || maxTemp != null) {
       map['max_temp'] = Variable<double>(maxTemp);
@@ -237,6 +254,8 @@ class Session extends DataClass implements Insertable<Session> {
       avgW: avgW == null && nullToAbsent ? const Value.absent() : Value(avgW),
       peakW:
           peakW == null && nullToAbsent ? const Value.absent() : Value(peakW),
+      avgMa:
+          avgMa == null && nullToAbsent ? const Value.absent() : Value(avgMa),
       maxTemp: maxTemp == null && nullToAbsent
           ? const Value.absent()
           : Value(maxTemp),
@@ -258,6 +277,7 @@ class Session extends DataClass implements Insertable<Session> {
       endPct: serializer.fromJson<int?>(json['endPct']),
       avgW: serializer.fromJson<double?>(json['avgW']),
       peakW: serializer.fromJson<double?>(json['peakW']),
+      avgMa: serializer.fromJson<double?>(json['avgMa']),
       maxTemp: serializer.fromJson<double?>(json['maxTemp']),
       chargerId: serializer.fromJson<int?>(json['chargerId']),
       chargerType: serializer.fromJson<String>(json['chargerType']),
@@ -274,6 +294,7 @@ class Session extends DataClass implements Insertable<Session> {
       'endPct': serializer.toJson<int?>(endPct),
       'avgW': serializer.toJson<double?>(avgW),
       'peakW': serializer.toJson<double?>(peakW),
+      'avgMa': serializer.toJson<double?>(avgMa),
       'maxTemp': serializer.toJson<double?>(maxTemp),
       'chargerId': serializer.toJson<int?>(chargerId),
       'chargerType': serializer.toJson<String>(chargerType),
@@ -288,6 +309,7 @@ class Session extends DataClass implements Insertable<Session> {
           Value<int?> endPct = const Value.absent(),
           Value<double?> avgW = const Value.absent(),
           Value<double?> peakW = const Value.absent(),
+          Value<double?> avgMa = const Value.absent(),
           Value<double?> maxTemp = const Value.absent(),
           Value<int?> chargerId = const Value.absent(),
           String? chargerType}) =>
@@ -299,6 +321,7 @@ class Session extends DataClass implements Insertable<Session> {
         endPct: endPct.present ? endPct.value : this.endPct,
         avgW: avgW.present ? avgW.value : this.avgW,
         peakW: peakW.present ? peakW.value : this.peakW,
+        avgMa: avgMa.present ? avgMa.value : this.avgMa,
         maxTemp: maxTemp.present ? maxTemp.value : this.maxTemp,
         chargerId: chargerId.present ? chargerId.value : this.chargerId,
         chargerType: chargerType ?? this.chargerType,
@@ -312,6 +335,7 @@ class Session extends DataClass implements Insertable<Session> {
       endPct: data.endPct.present ? data.endPct.value : this.endPct,
       avgW: data.avgW.present ? data.avgW.value : this.avgW,
       peakW: data.peakW.present ? data.peakW.value : this.peakW,
+      avgMa: data.avgMa.present ? data.avgMa.value : this.avgMa,
       maxTemp: data.maxTemp.present ? data.maxTemp.value : this.maxTemp,
       chargerId: data.chargerId.present ? data.chargerId.value : this.chargerId,
       chargerType:
@@ -329,6 +353,7 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('endPct: $endPct, ')
           ..write('avgW: $avgW, ')
           ..write('peakW: $peakW, ')
+          ..write('avgMa: $avgMa, ')
           ..write('maxTemp: $maxTemp, ')
           ..write('chargerId: $chargerId, ')
           ..write('chargerType: $chargerType')
@@ -338,7 +363,7 @@ class Session extends DataClass implements Insertable<Session> {
 
   @override
   int get hashCode => Object.hash(id, startTs, endTs, startPct, endPct, avgW,
-      peakW, maxTemp, chargerId, chargerType);
+      peakW, avgMa, maxTemp, chargerId, chargerType);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -350,6 +375,7 @@ class Session extends DataClass implements Insertable<Session> {
           other.endPct == this.endPct &&
           other.avgW == this.avgW &&
           other.peakW == this.peakW &&
+          other.avgMa == this.avgMa &&
           other.maxTemp == this.maxTemp &&
           other.chargerId == this.chargerId &&
           other.chargerType == this.chargerType);
@@ -363,6 +389,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<int?> endPct;
   final Value<double?> avgW;
   final Value<double?> peakW;
+  final Value<double?> avgMa;
   final Value<double?> maxTemp;
   final Value<int?> chargerId;
   final Value<String> chargerType;
@@ -374,6 +401,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.endPct = const Value.absent(),
     this.avgW = const Value.absent(),
     this.peakW = const Value.absent(),
+    this.avgMa = const Value.absent(),
     this.maxTemp = const Value.absent(),
     this.chargerId = const Value.absent(),
     this.chargerType = const Value.absent(),
@@ -386,6 +414,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.endPct = const Value.absent(),
     this.avgW = const Value.absent(),
     this.peakW = const Value.absent(),
+    this.avgMa = const Value.absent(),
     this.maxTemp = const Value.absent(),
     this.chargerId = const Value.absent(),
     required String chargerType,
@@ -400,6 +429,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<int>? endPct,
     Expression<double>? avgW,
     Expression<double>? peakW,
+    Expression<double>? avgMa,
     Expression<double>? maxTemp,
     Expression<int>? chargerId,
     Expression<String>? chargerType,
@@ -412,6 +442,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (endPct != null) 'end_pct': endPct,
       if (avgW != null) 'avg_w': avgW,
       if (peakW != null) 'peak_w': peakW,
+      if (avgMa != null) 'avg_ma': avgMa,
       if (maxTemp != null) 'max_temp': maxTemp,
       if (chargerId != null) 'charger_id': chargerId,
       if (chargerType != null) 'charger_type': chargerType,
@@ -426,6 +457,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       Value<int?>? endPct,
       Value<double?>? avgW,
       Value<double?>? peakW,
+      Value<double?>? avgMa,
       Value<double?>? maxTemp,
       Value<int?>? chargerId,
       Value<String>? chargerType}) {
@@ -437,6 +469,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       endPct: endPct ?? this.endPct,
       avgW: avgW ?? this.avgW,
       peakW: peakW ?? this.peakW,
+      avgMa: avgMa ?? this.avgMa,
       maxTemp: maxTemp ?? this.maxTemp,
       chargerId: chargerId ?? this.chargerId,
       chargerType: chargerType ?? this.chargerType,
@@ -467,6 +500,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (peakW.present) {
       map['peak_w'] = Variable<double>(peakW.value);
     }
+    if (avgMa.present) {
+      map['avg_ma'] = Variable<double>(avgMa.value);
+    }
     if (maxTemp.present) {
       map['max_temp'] = Variable<double>(maxTemp.value);
     }
@@ -489,6 +525,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('endPct: $endPct, ')
           ..write('avgW: $avgW, ')
           ..write('peakW: $peakW, ')
+          ..write('avgMa: $avgMa, ')
           ..write('maxTemp: $maxTemp, ')
           ..write('chargerId: $chargerId, ')
           ..write('chargerType: $chargerType')
@@ -1639,6 +1676,7 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   Value<int?> endPct,
   Value<double?> avgW,
   Value<double?> peakW,
+  Value<double?> avgMa,
   Value<double?> maxTemp,
   Value<int?> chargerId,
   required String chargerType,
@@ -1651,6 +1689,7 @@ typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<int?> endPct,
   Value<double?> avgW,
   Value<double?> peakW,
+  Value<double?> avgMa,
   Value<double?> maxTemp,
   Value<int?> chargerId,
   Value<String> chargerType,
@@ -1680,6 +1719,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<int?> endPct = const Value.absent(),
             Value<double?> avgW = const Value.absent(),
             Value<double?> peakW = const Value.absent(),
+            Value<double?> avgMa = const Value.absent(),
             Value<double?> maxTemp = const Value.absent(),
             Value<int?> chargerId = const Value.absent(),
             Value<String> chargerType = const Value.absent(),
@@ -1692,6 +1732,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             endPct: endPct,
             avgW: avgW,
             peakW: peakW,
+            avgMa: avgMa,
             maxTemp: maxTemp,
             chargerId: chargerId,
             chargerType: chargerType,
@@ -1704,6 +1745,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<int?> endPct = const Value.absent(),
             Value<double?> avgW = const Value.absent(),
             Value<double?> peakW = const Value.absent(),
+            Value<double?> avgMa = const Value.absent(),
             Value<double?> maxTemp = const Value.absent(),
             Value<int?> chargerId = const Value.absent(),
             required String chargerType,
@@ -1716,6 +1758,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             endPct: endPct,
             avgW: avgW,
             peakW: peakW,
+            avgMa: avgMa,
             maxTemp: maxTemp,
             chargerId: chargerId,
             chargerType: chargerType,
@@ -1758,6 +1801,11 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<double> get peakW => $state.composableBuilder(
       column: $state.table.peakW,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get avgMa => $state.composableBuilder(
+      column: $state.table.avgMa,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -1812,6 +1860,11 @@ class $$SessionsTableOrderingComposer
 
   ColumnOrderings<double> get peakW => $state.composableBuilder(
       column: $state.table.peakW,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get avgMa => $state.composableBuilder(
+      column: $state.table.avgMa,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

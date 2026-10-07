@@ -1,4 +1,4 @@
-package chargeeasy.app
+package chargetracker.app
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -21,14 +21,14 @@ import android.os.Looper
 
 class BatteryPlugin(private val context: Context) : MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
-    private val BATTERY_STREAM_CHANNEL = "chargeeasy.app/battery_stream"
-    private val BATTERY_COMMANDS_CHANNEL = "chargeeasy.app/battery_commands"
+    private val BATTERY_STREAM_CHANNEL = "chargetracker.app/battery_stream"
+    private val BATTERY_COMMANDS_CHANNEL = "chargetracker.app/battery_commands"
 
     private var eventSink: EventChannel.EventSink? = null
     private val handler = Handler(Looper.getMainLooper())
     private var isPolling = false
     private val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-    private val prefs: SharedPreferences = context.getSharedPreferences("ChargeEasyPrefs", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences = context.getSharedPreferences("ChargeTrackerPrefs", Context.MODE_PRIVATE)
 
     fun registerWith(flutterEngine: FlutterEngine) {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BATTERY_COMMANDS_CHANNEL).setMethodCallHandler(this)
@@ -40,8 +40,13 @@ class BatteryPlugin(private val context: Context) : MethodChannel.MethodCallHand
             "getDesignCapacity" -> {
                 result.success(getDesignCapacity())
             }
+            "isForegroundServiceRunning" -> {
+                result.success(ChargingForegroundService.isServiceRunning)
+            }
             "startForegroundService" -> {
-                val intent = Intent(context, ChargingForegroundService::class.java)
+                val intent = Intent(context, ChargingForegroundService::class.java).apply {
+                    action = ChargingForegroundService.ACTION_START_TRACKING
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent)
                 } else {
@@ -51,10 +56,34 @@ class BatteryPlugin(private val context: Context) : MethodChannel.MethodCallHand
                 result.success(true)
             }
             "stopForegroundService" -> {
-                val intent = Intent(context, ChargingForegroundService::class.java)
+                val intent = Intent(context, ChargingForegroundService::class.java).apply {
+                    action = ChargingForegroundService.ACTION_STOP_TRACKING
+                }
                 context.stopService(intent)
                 prefs.edit().putBoolean("service_running", false).apply()
                 result.success(true)
+            }
+            "toggleManualTracking" -> {
+                val currentlyRunning = ChargingForegroundService.isServiceRunning
+                if (currentlyRunning) {
+                    val intent = Intent(context, ChargingForegroundService::class.java).apply {
+                        action = ChargingForegroundService.ACTION_STOP_TRACKING
+                    }
+                    context.stopService(intent)
+                    prefs.edit().putBoolean("service_running", false).apply()
+                    result.success(false)
+                } else {
+                    val intent = Intent(context, ChargingForegroundService::class.java).apply {
+                        action = ChargingForegroundService.ACTION_START_TRACKING
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent)
+                    } else {
+                        context.startService(intent)
+                    }
+                    prefs.edit().putBoolean("service_running", true).apply()
+                    result.success(true)
+                }
             }
             "setGuardMode" -> {
                 val enabled = call.arguments as? Boolean ?: false
@@ -167,6 +196,18 @@ class BatteryPlugin(private val context: Context) : MethodChannel.MethodCallHand
         val percent = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         val chargeCounterUah = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
 
+        val computeTimeRemainingMs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                batteryManager.computeChargeTimeRemaining()
+            } catch (e: Exception) {
+                -1L
+            }
+        } else {
+            -1L
+        }
+
+        val designCap = getDesignCapacity()
+
         val data = mapOf(
             "currentMa" to currentMa,
             "voltageMv" to voltageMv,
@@ -176,7 +217,8 @@ class BatteryPlugin(private val context: Context) : MethodChannel.MethodCallHand
             "plugged" to plugged,
             "health" to health,
             "chargeCounterUah" to chargeCounterUah,
-            "designCapacityMah" to getDesignCapacity(),
+            "designCapacityMah" to designCap,
+            "chargeTimeRemainingMs" to computeTimeRemainingMs,
             "technology" to technology,
             "timestamp" to System.currentTimeMillis()
         )
@@ -187,22 +229,67 @@ class BatteryPlugin(private val context: Context) : MethodChannel.MethodCallHand
     private var cachedDesignCapacity: Int? = null
 
     private fun getDesignCapacity(): Int {
-        cachedDesignCapacity?.let { return it }
-        val capacity = try {
-            val file = File("/sys/class/power_supply/battery/charge_full_design")
-            if (file.exists()) {
-                val reader = BufferedReader(FileReader(file))
-                val capacityStr = reader.readLine()
-                reader.close()
-                val cap = capacityStr?.trim()?.toIntOrNull() ?: -1
-                if (cap > 20000) cap / 1000 else cap
-            } else {
-                -1
+        cachedDesignCapacity?.let { if (it > 0) return it }
+
+        // Method 1: Android internal PowerProfile via reflection (works on virtually all Android phones)
+        try {
+            val powerProfileClass = Class.forName("com.android.internal.os.PowerProfile")
+            val powerProfile = powerProfileClass.getConstructor(Context::class.java).newInstance(context)
+            val cap = powerProfileClass.getMethod("getBatteryCapacity").invoke(powerProfile) as? Double
+            if (cap != null && cap > 0) {
+                val capInt = cap.toInt()
+                if (capInt in 800..25000) {
+                    cachedDesignCapacity = capInt
+                    return capInt
+                }
             }
         } catch (e: Exception) {
-            -1
+            // PowerProfile reflection failed, continue to fallback methods
         }
-        cachedDesignCapacity = capacity
-        return capacity
+
+        // Method 2: Charge counter & current percentage ratio
+        try {
+            val chargeCounterUah = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+            val percent = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+            if (chargeCounterUah > 0 && percent > 0) {
+                val computedMah = ((chargeCounterUah.toDouble() / 1000.0) / (percent.toDouble() / 100.0)).toInt()
+                if (computedMah in 800..25000) {
+                    cachedDesignCapacity = computedMah
+                    return computedMah
+                }
+            }
+        } catch (e: Exception) {
+            // ignore
+        }
+
+        // Method 3: Expanded sysfs paths for rooted or custom OEM kernels
+        val sysfsPaths = listOf(
+            "/sys/class/power_supply/battery/charge_full_design",
+            "/sys/class/power_supply/bms/charge_full_design",
+            "/sys/class/power_supply/battery/charge_full",
+            "/sys/class/power_supply/bms/charge_full"
+        )
+        for (path in sysfsPaths) {
+            try {
+                val file = File(path)
+                if (file.exists() && file.canRead()) {
+                    val reader = BufferedReader(FileReader(file))
+                    val capacityStr = reader.readLine()
+                    reader.close()
+                    val cap = capacityStr?.trim()?.toIntOrNull() ?: -1
+                    if (cap > 0) {
+                        val finalCap = if (cap > 20000) cap / 1000 else cap
+                        if (finalCap in 800..25000) {
+                            cachedDesignCapacity = finalCap
+                            return finalCap
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+
+        return -1
     }
 }

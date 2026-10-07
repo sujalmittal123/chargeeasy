@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../providers/settings_provider.dart';
+import '../../../providers/battery_provider.dart';
 import '../../../data/services/battery_service.dart';
 
 class CalibrationScreen extends ConsumerStatefulWidget {
@@ -15,7 +16,7 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
   int _currentStep = 0;
   bool _isPositive = true;
   final String _detectedUnit = 'MicroAmperes (µA) auto-detected';
-  final TextEditingController _capacityController = TextEditingController(text: '5000');
+  final TextEditingController _capacityController = TextEditingController();
 
   @override
   void initState() {
@@ -24,6 +25,13 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
   }
 
   Future<void> _loadInitialCapacity() async {
+    final settingsCap = ref.read(settingsProvider).valueOrNull?.designCapacityMah ?? 0;
+    if (settingsCap > 0 && mounted) {
+      setState(() {
+        _capacityController.text = settingsCap.toString();
+      });
+      return;
+    }
     final cap = await BatteryService().getDesignCapacity();
     if (cap > 0 && mounted) {
       setState(() {
@@ -40,6 +48,11 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final reading = ref.watch(batteryStreamProvider).valueOrNull;
+    final currentStr = reading != null
+        ? '${reading.currentMa >= 0 ? "+" : ""}${reading.currentMa.toInt()} mA'
+        : 'Reading sensor...';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Sensor Calibration')),
       body: Stepper(
@@ -49,12 +62,14 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
             setState(() => _currentStep += 1);
           } else {
             // Save calibration results
-            final cap = int.tryParse(_capacityController.text) ?? 5000;
-            await ref.read(settingsProvider.notifier).setDesignCapacity(cap);
+            final cap = int.tryParse(_capacityController.text) ?? 0;
+            if (cap > 0) {
+              await ref.read(settingsProvider.notifier).setDesignCapacity(cap);
+            }
             await BatteryService().calibrateCurrentSign(_isPositive);
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Calibration saved: $_detectedUnit, ${cap}mAh, sign: ${_isPositive ? "Positive" : "Inverted"}')),
+                SnackBar(content: Text('Calibration saved: $_detectedUnit, ${cap > 0 ? "${cap}mAh" : "no capacity set"}, sign: ${_isPositive ? "Positive" : "Inverted"}')),
               );
               Navigator.pop(context);
             }
@@ -71,7 +86,7 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
           Step(
             title: const Text('Connect Charger'),
             content: const Text(
-              'Connect your phone to a wall charger or USB cable. ChargeEasy needs live incoming current to calibrate current direction and sensor scale.',
+              'Connect your phone to a wall charger or USB cable. Charge Tracker needs live incoming current to calibrate current direction and sensor scale.',
             ),
             isActive: _currentStep >= 0,
           ),
@@ -88,11 +103,11 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.bolt, color: Color(0xFF00E5FF)),
-                      SizedBox(width: 8),
-                      Text('Raw Sensor Value: +1,540,320 µA', style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                      const Icon(Icons.bolt, color: Color(0xFF00E5FF)),
+                      const SizedBox(width: 8),
+                      Text('Raw Sensor Value: $currentStr', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -121,7 +136,7 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('ChargeEasy inspects |CURRENT_NOW|. Values >20,000 are microamps (µA) scaled down by 1,000 into mA.'),
+                const Text('Charge Tracker inspects |CURRENT_NOW|. Values >20,000 are microamps (µA) scaled down by 1,000 into mA.'),
                 const SizedBox(height: 8),
                 Text('Detected: $_detectedUnit', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
               ],

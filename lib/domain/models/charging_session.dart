@@ -13,6 +13,7 @@ class ChargingSession with _$ChargingSession {
     int? endPercent,
     double? avgPowerW,
     double? peakPowerW,
+    double? avgMa,
     double? maxTempC,
     int? chargerId,
     required String chargerType,

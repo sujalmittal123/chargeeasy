@@ -28,6 +28,10 @@ mixin _$BatteryReading {
   PlugType get plugType => throw _privateConstructorUsedError;
   BatteryHealth get health => throw _privateConstructorUsedError;
   DateTime get timestamp => throw _privateConstructorUsedError;
+  String get technology => throw _privateConstructorUsedError;
+  int get designCapacityMah => throw _privateConstructorUsedError;
+  int get chargeCounterUah => throw _privateConstructorUsedError;
+  int get chargeTimeRemainingMs => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -49,7 +53,11 @@ abstract class $BatteryReadingCopyWith<$Res> {
       BatteryStatus status,
       PlugType plugType,
       BatteryHealth health,
-      DateTime timestamp});
+      DateTime timestamp,
+      String technology,
+      int designCapacityMah,
+      int chargeCounterUah,
+      int chargeTimeRemainingMs});
 }
 
 /// @nodoc
@@ -73,6 +81,10 @@ class _$BatteryReadingCopyWithImpl<$Res, $Val extends BatteryReading>
     Object? plugType = null,
     Object? health = null,
     Object? timestamp = null,
+    Object? technology = null,
+    Object? designCapacityMah = null,
+    Object? chargeCounterUah = null,
+    Object? chargeTimeRemainingMs = null,
   }) {
     return _then(_value.copyWith(
       currentMa: null == currentMa
@@ -107,6 +119,22 @@ class _$BatteryReadingCopyWithImpl<$Res, $Val extends BatteryReading>
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      technology: null == technology
+          ? _value.technology
+          : technology // ignore: cast_nullable_to_non_nullable
+              as String,
+      designCapacityMah: null == designCapacityMah
+          ? _value.designCapacityMah
+          : designCapacityMah // ignore: cast_nullable_to_non_nullable
+              as int,
+      chargeCounterUah: null == chargeCounterUah
+          ? _value.chargeCounterUah
+          : chargeCounterUah // ignore: cast_nullable_to_non_nullable
+              as int,
+      chargeTimeRemainingMs: null == chargeTimeRemainingMs
+          ? _value.chargeTimeRemainingMs
+          : chargeTimeRemainingMs // ignore: cast_nullable_to_non_nullable
+              as int,
     ) as $Val);
   }
 }
@@ -127,7 +155,11 @@ abstract class _$$BatteryReadingImplCopyWith<$Res>
       BatteryStatus status,
       PlugType plugType,
       BatteryHealth health,
-      DateTime timestamp});
+      DateTime timestamp,
+      String technology,
+      int designCapacityMah,
+      int chargeCounterUah,
+      int chargeTimeRemainingMs});
 }
 
 /// @nodoc
@@ -149,6 +181,10 @@ class __$$BatteryReadingImplCopyWithImpl<$Res>
     Object? plugType = null,
     Object? health = null,
     Object? timestamp = null,
+    Object? technology = null,
+    Object? designCapacityMah = null,
+    Object? chargeCounterUah = null,
+    Object? chargeTimeRemainingMs = null,
   }) {
     return _then(_$BatteryReadingImpl(
       currentMa: null == currentMa
@@ -183,6 +219,22 @@ class __$$BatteryReadingImplCopyWithImpl<$Res>
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      technology: null == technology
+          ? _value.technology
+          : technology // ignore: cast_nullable_to_non_nullable
+              as String,
+      designCapacityMah: null == designCapacityMah
+          ? _value.designCapacityMah
+          : designCapacityMah // ignore: cast_nullable_to_non_nullable
+              as int,
+      chargeCounterUah: null == chargeCounterUah
+          ? _value.chargeCounterUah
+          : chargeCounterUah // ignore: cast_nullable_to_non_nullable
+              as int,
+      chargeTimeRemainingMs: null == chargeTimeRemainingMs
+          ? _value.chargeTimeRemainingMs
+          : chargeTimeRemainingMs // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -198,7 +250,11 @@ class _$BatteryReadingImpl extends _BatteryReading {
       required this.status,
       required this.plugType,
       required this.health,
-      required this.timestamp})
+      required this.timestamp,
+      this.technology = 'Li-ion',
+      this.designCapacityMah = 0,
+      this.chargeCounterUah = 0,
+      this.chargeTimeRemainingMs = -1})
       : super._();
 
   factory _$BatteryReadingImpl.fromJson(Map<String, dynamic> json) =>
@@ -220,10 +276,22 @@ class _$BatteryReadingImpl extends _BatteryReading {
   final BatteryHealth health;
   @override
   final DateTime timestamp;
+  @override
+  @JsonKey()
+  final String technology;
+  @override
+  @JsonKey()
+  final int designCapacityMah;
+  @override
+  @JsonKey()
+  final int chargeCounterUah;
+  @override
+  @JsonKey()
+  final int chargeTimeRemainingMs;
 
   @override
   String toString() {
-    return 'BatteryReading(currentMa: $currentMa, voltageMv: $voltageMv, temperatureC: $temperatureC, percent: $percent, status: $status, plugType: $plugType, health: $health, timestamp: $timestamp)';
+    return 'BatteryReading(currentMa: $currentMa, voltageMv: $voltageMv, temperatureC: $temperatureC, percent: $percent, status: $status, plugType: $plugType, health: $health, timestamp: $timestamp, technology: $technology, designCapacityMah: $designCapacityMah, chargeCounterUah: $chargeCounterUah, chargeTimeRemainingMs: $chargeTimeRemainingMs)';
   }
 
   @override
@@ -243,13 +311,33 @@ class _$BatteryReadingImpl extends _BatteryReading {
                 other.plugType == plugType) &&
             (identical(other.health, health) || other.health == health) &&
             (identical(other.timestamp, timestamp) ||
-                other.timestamp == timestamp));
+                other.timestamp == timestamp) &&
+            (identical(other.technology, technology) ||
+                other.technology == technology) &&
+            (identical(other.designCapacityMah, designCapacityMah) ||
+                other.designCapacityMah == designCapacityMah) &&
+            (identical(other.chargeCounterUah, chargeCounterUah) ||
+                other.chargeCounterUah == chargeCounterUah) &&
+            (identical(other.chargeTimeRemainingMs, chargeTimeRemainingMs) ||
+                other.chargeTimeRemainingMs == chargeTimeRemainingMs));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, currentMa, voltageMv,
-      temperatureC, percent, status, plugType, health, timestamp);
+  int get hashCode => Object.hash(
+      runtimeType,
+      currentMa,
+      voltageMv,
+      temperatureC,
+      percent,
+      status,
+      plugType,
+      health,
+      timestamp,
+      technology,
+      designCapacityMah,
+      chargeCounterUah,
+      chargeTimeRemainingMs);
 
   @JsonKey(ignore: true)
   @override
@@ -275,7 +363,11 @@ abstract class _BatteryReading extends BatteryReading {
       required final BatteryStatus status,
       required final PlugType plugType,
       required final BatteryHealth health,
-      required final DateTime timestamp}) = _$BatteryReadingImpl;
+      required final DateTime timestamp,
+      final String technology,
+      final int designCapacityMah,
+      final int chargeCounterUah,
+      final int chargeTimeRemainingMs}) = _$BatteryReadingImpl;
   const _BatteryReading._() : super._();
 
   factory _BatteryReading.fromJson(Map<String, dynamic> json) =
@@ -297,6 +389,14 @@ abstract class _BatteryReading extends BatteryReading {
   BatteryHealth get health;
   @override
   DateTime get timestamp;
+  @override
+  String get technology;
+  @override
+  int get designCapacityMah;
+  @override
+  int get chargeCounterUah;
+  @override
+  int get chargeTimeRemainingMs;
   @override
   @JsonKey(ignore: true)
   _$$BatteryReadingImplCopyWith<_$BatteryReadingImpl> get copyWith =>

@@ -27,6 +27,10 @@ final goRouter = GoRouter(
       path: '/',
       builder: (context, state) => const OnboardingScreen(),
     ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(forced: true),
+    ),
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
       builder: (context, state, child) {

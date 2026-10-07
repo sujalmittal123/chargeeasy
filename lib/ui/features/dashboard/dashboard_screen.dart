@@ -9,7 +9,6 @@ import '../../core/widgets/analog_speedometer_gauge.dart';
 import '../../core/widgets/mini_dial_gauge.dart';
 import '../../core/widgets/sparkline_chart.dart';
 import '../../../domain/models/battery_reading.dart';
-import '../../../domain/use_cases/compute_time_estimate.dart';
 import '../../../providers/battery_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../data/services/battery_service.dart';
@@ -23,11 +22,83 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  final List<double> _powerHistory = [12.0, 13.5, 14.2, 15.0, 14.8, 16.2, 18.0, 17.5, 19.1, 18.4];
+  final List<double> _powerHistory = [];
+  final List<({DateTime time, int percent, bool isCharging})> _levelHistory = [];
+  final List<({DateTime time, double currentMa})> _currentMaHistory = [];
   bool _isTrackingSession = false;
-  DateTime? _sessionStartTime;
-  int? _sessionStartPct;
-  bool _useSpeedometerView = true; // Toggle between Speedometer and Digital Ring
+  bool _useSpeedometerView = true;
+  bool _promptedForCapacity = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkServiceStatus();
+  }
+
+  Future<void> _checkServiceStatus() async {
+    try {
+      final running = await BatteryService().isForegroundServiceRunning();
+      if (mounted) setState(() => _isTrackingSession = running);
+    } catch (_) {}
+  }
+
+  void _checkPromptDesignCapacity(int detectedFromKernel, int currentSettingsCap) {
+    if (_promptedForCapacity) return;
+    if (detectedFromKernel <= 0 && currentSettingsCap <= 0) {
+      _promptedForCapacity = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showDesignCapacityDialog();
+      });
+    }
+  }
+
+  void _showDesignCapacityDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enter Battery Capacity'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your device does not report battery design capacity to Android. Please enter your phone\'s battery size in mAh (check GSMArena or specs):',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Capacity (mAh)',
+                hintText: 'e.g. 4500, 5000',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Skip'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final val = int.tryParse(controller.text.trim());
+              if (val != null && val >= 500 && val <= 30000) {
+                ref.read(settingsProvider.notifier).setDesignCapacity(val);
+                Navigator.of(ctx).pop();
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,18 +106,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final settingsAsync = ref.watch(settingsProvider);
     final settings = settingsAsync.valueOrNull ?? const AppSettings();
 
-    // Live battery reading or realistic fallback for preview/emulator
-    final reading = batteryAsync.valueOrNull ??
-        BatteryReading(
-          currentMa: -378,
-          voltageMv: 3840,
-          temperatureC: 32.7,
-          percent: 48,
-          status: BatteryStatus.discharging,
-          plugType: PlugType.none,
-          health: BatteryHealth.good,
-          timestamp: DateTime.now(),
-        );
+    final reading = batteryAsync.valueOrNull;
+    if (reading == null) {
+      return Scaffold(
+        appBar: AppBar(
+          titleSpacing: 16,
+          title: const Text(
+            'Charge Tracker',
+            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.stars,
+                color: settings.isPro ? const Color(0xFF00E5FF) : const Color(0xFFF59E0B),
+                size: 24,
+              ),
+              tooltip: settings.isPro ? 'Charge Tracker Pro Active' : 'Premium - Coming Soon',
+              onPressed: () => PremiumSubscriptionSheet.show(context),
+            ),
+            IconButton(
+              icon: const Icon(Icons.account_circle_outlined, size: 26),
+              tooltip: 'Profile',
+              onPressed: () => context.push('/profile'),
+            ),
+          ],
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Reading device battery sensors...',
+                style: TextStyle(color: Colors.grey, fontSize: 15),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     final powerW = reading.powerW;
     final absPowerW = powerW.abs();
@@ -67,113 +167,150 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       PlugType.none => isCharging ? 'Connected' : 'On battery',
     };
 
-    // Time estimate calculation
-    final timeEstimateUseCase = ComputeTimeEstimateUseCase();
-    final estimatedTime = timeEstimateUseCase.execute(
-          isCharging: isCharging,
-          currentPercent: reading.percent,
-          ratePerMin: isCharging ? 0.8 : 0.15,
-        ) ??
-        (isCharging ? const Duration(minutes: 45) : const Duration(hours: 5, minutes: 13));
+    // Dynamic design capacity detection
+    final detectedCapacity = reading.designCapacityMah > 0 ? reading.designCapacityMah : 0;
+    final designCap = settings.designCapacityMah > 0 ? settings.designCapacityMah : detectedCapacity;
 
-    // Design capacity & current mAh
-    final designCap = settings.designCapacityMah > 0 ? settings.designCapacityMah : 5000;
-    final currentMah = ((reading.percent / 100.0) * designCap).toInt();
+    // Auto-update settings with real device capacity if not yet set
+    if (settings.designCapacityMah == 0 && reading.designCapacityMah > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(settingsProvider.notifier).setDesignCapacity(reading.designCapacityMah);
+      });
+    } else {
+      _checkPromptDesignCapacity(reading.designCapacityMah, settings.designCapacityMah);
+    }
+
+    // Real charge in mAh
+    final hasRealCounter = reading.chargeCounterUah > 0;
+    final currentMah = hasRealCounter
+        ? (reading.chargeCounterUah / 1000).toInt()
+        : (designCap > 0 ? ((reading.percent / 100.0) * designCap).toInt() : 0);
+
+    // Dynamic rate per hour calculation from rolling 10-15 min window
+    final now = DateTime.now();
+    _levelHistory.removeWhere((item) => now.difference(item.time).inMinutes > 15);
+    _levelHistory.add((time: now, percent: reading.percent, isCharging: isCharging));
+
+    double ratePerHour = 0.0;
+    final matchingHistory = _levelHistory.where((e) => e.isCharging == isCharging).toList();
+    if (matchingHistory.length >= 2) {
+      final oldest = matchingHistory.first;
+      final elapsedSec = now.difference(oldest.time).inSeconds;
+      if (elapsedSec >= 180) {
+        final pctDiff = (oldest.percent - reading.percent).abs();
+        final hours = elapsedSec / 3600.0;
+        if (hours > 0 && pctDiff > 0) {
+          ratePerHour = pctDiff / hours;
+        }
+      }
+    }
+
+    // Dynamic time estimate calculation over rolling 5-minute current window
+    _currentMaHistory.removeWhere((item) => now.difference(item.time).inMinutes > 5);
+    _currentMaHistory.add((time: now, currentMa: reading.currentMa.abs()));
+
+    Duration estimatedTime = Duration.zero;
+    if (isCharging && reading.chargeTimeRemainingMs > 0) {
+      estimatedTime = Duration(milliseconds: reading.chargeTimeRemainingMs);
+    } else if (_currentMaHistory.isNotEmpty) {
+      final avgMa = _currentMaHistory.map((e) => e.currentMa).reduce((a, b) => a + b) / _currentMaHistory.length;
+      if (avgMa > 20) {
+        if (!isCharging && currentMah > 0) {
+          final hours = currentMah / avgMa;
+          estimatedTime = Duration(minutes: (hours * 60).toInt());
+        } else if (isCharging && designCap > currentMah) {
+          final hours = (designCap - currentMah) / avgMa;
+          estimatedTime = Duration(minutes: (hours * 60).toInt());
+        }
+      }
+    }
 
     // Charge limit coaching alert
     final isLimitReached = isCharging && reading.percent >= settings.chargeLimitPct;
 
-    // Discharge / Charge rate per hour calculation
-    final ratePerHour = isCharging ? 28.0 : 9.0;
-
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 12,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.bolt, color: Color(0xFF00E5FF), size: 22),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'ChargeEasy',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-            ),
-          ],
+        titleSpacing: 16,
+        title: const Text(
+          'Charge Tracker',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
         actions: [
-          // Crown button for Premium (Starts at ₹79)
+          // 1. Crown / Stars button for Premium
           IconButton(
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  Icons.stars,
-                  color: settings.isPro ? const Color(0xFF00E5FF) : const Color(0xFFF59E0B),
-                  size: 26,
-                ),
-                if (!settings.isPro)
-                  Positioned(
-                    top: -2,
-                    right: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
-                    ),
-                  ),
-              ],
+            icon: Icon(
+              Icons.stars,
+              color: settings.isPro ? const Color(0xFF00E5FF) : const Color(0xFFF59E0B),
+              size: 24,
             ),
-            tooltip: settings.isPro ? 'ChargeEasy Pro Active' : 'Get Premium (₹79)',
+            tooltip: settings.isPro ? 'Charge Tracker Pro Active' : 'Premium - Coming Soon',
             onPressed: () => PremiumSubscriptionSheet.show(context),
           ),
 
-          // Profile Button (Matching Image 3)
+          // 2. Profile Button
           IconButton(
             icon: const Icon(Icons.account_circle_outlined, size: 26),
             tooltip: 'Profile',
             onPressed: () => context.push('/profile'),
           ),
 
-          // Calibration
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: 'Calibration',
-            onPressed: () => context.push('/calibration'),
-          ),
-
-          // Guard Mode
-          IconButton(
-            icon: const Icon(Icons.security_outlined),
-            tooltip: 'Guard Mode',
-            onPressed: () => context.push('/guard'),
-          ),
-
-          // Share
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            tooltip: 'Share Stats',
-            onPressed: () {
-              Share.share(
-                '🔋 ChargeEasy Battery Telemetry:\n'
-                'Level: ${reading.percent}%\n'
-                'Current: ${reading.currentMa.toInt()} mA\n'
-                'Power: ${absPowerW.toStringAsFixed(1)} W\n'
-                'Temp: ${reading.temperatureC.toStringAsFixed(1)}°C\n'
-                'Status: $plugLabel',
-              );
+          // 3. Overflow Menu for Secondary Actions (Prevents AppBar overlap on all screen sizes)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More options',
+            onSelected: (value) {
+              switch (value) {
+                case 'calibration':
+                  context.push('/calibration');
+                  break;
+                case 'guard':
+                  context.push('/guard');
+                  break;
+                case 'share':
+                  Share.share(
+                    '🔋 Charge Tracker Battery Telemetry:\n'
+                    'Level: ${reading.percent}%\n'
+                    'Current: ${reading.currentMa.toInt()} mA\n'
+                    'Power: ${absPowerW.toStringAsFixed(1)} W\n'
+                    'Temp: ${reading.temperatureC.toStringAsFixed(1)}°C\n'
+                    'Capacity: $designCap mAh\n'
+                    'Status: $plugLabel',
+                  );
+                  break;
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'calibration',
+                child: Row(
+                  children: [
+                    Icon(Icons.tune, size: 20),
+                    SizedBox(width: 12),
+                    Text('Calibration'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'guard',
+                child: Row(
+                  children: [
+                    Icon(Icons.security_outlined, size: 20),
+                    SizedBox(width: 12),
+                    Text('Guard Mode'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    Icon(Icons.share_outlined, size: 20),
+                    SizedBox(width: 12),
+                    Text('Share Telemetry'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -183,7 +320,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 36.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -316,17 +453,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 crossAxisSpacing: 10,
                 childAspectRatio: 0.95,
                 children: [
-                  // 1. Voltage Dial (3.0V - 4.5V)
-                  MiniDialGaugeCard(
-                    title: 'Voltage',
-                    valueText: '${(reading.voltageMv / 1000.0).toStringAsFixed(2)} V',
-                    fraction: (((reading.voltageMv / 1000.0) - 3.2) / (4.4 - 3.2)).clamp(0.0, 1.0),
-                    arcColors: const [
-                      Color(0xFFEAB308),
-                      Color(0xFF22C55E),
-                      Color(0xFF3B82F6),
-                      Color(0xFFEF4444),
-                    ],
+                  // 1. Voltage Dial (3.0V - 4.5V single cell, or 6.0V - 9.0V dual cell fast charging)
+                  Builder(
+                    builder: (context) {
+                      final voltV = reading.voltageMv / 1000.0;
+                      final isDualCell = voltV > 5.5;
+                      final minVolt = isDualCell ? 6.4 : 3.2;
+                      final maxVolt = isDualCell ? 9.0 : 4.45;
+                      final voltFraction = ((voltV - minVolt) / (maxVolt - minVolt)).clamp(0.0, 1.0);
+                      return MiniDialGaugeCard(
+                        title: 'Voltage',
+                        valueText: '${voltV.toStringAsFixed(2)} V',
+                        fraction: voltFraction,
+                        arcColors: const [
+                          Color(0xFFEAB308),
+                          Color(0xFF22C55E),
+                          Color(0xFF3B82F6),
+                          Color(0xFFEF4444),
+                        ],
+                      );
+                    },
                   ),
 
                   // 2. Temperature Dial (20°C - 50°C)
@@ -365,17 +511,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                   ),
 
-                  // 5. Power Dial (0W - 35W)
-                  MiniDialGaugeCard(
-                    title: 'Power',
-                    valueText: isCharging
-                        ? '+${absPowerW.toStringAsFixed(2)} W'
-                        : '-${absPowerW.toStringAsFixed(2)} W',
-                    fraction: (absPowerW / 35.0).clamp(0.0, 1.0),
-                    arcColors: const [
-                      Color(0xFFEF4444),
-                      Color(0xFF22C55E),
-                    ],
+                  // 5. Power Dial (dynamically adaptive: 35W, 65W, 120W)
+                  Builder(
+                    builder: (context) {
+                      final maxPowerW = absPowerW > 65.0 ? 120.0 : (absPowerW > 35.0 ? 65.0 : 35.0);
+                      return MiniDialGaugeCard(
+                        title: 'Power',
+                        valueText: isCharging
+                            ? '+${absPowerW.toStringAsFixed(2)} W'
+                            : '-${absPowerW.toStringAsFixed(2)} W',
+                        fraction: (absPowerW / maxPowerW).clamp(0.0, 1.0),
+                        arcColors: const [
+                          Color(0xFFEF4444),
+                          Color(0xFF22C55E),
+                        ],
+                      );
+                    },
                   ),
 
                   // 6. Plugged Card
@@ -411,21 +562,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                   ),
 
-                  // 8. Technology Card
-                  const MiniIconTelemetryCard(
+                  // 8. Technology Card (Dynamic hardware technology e.g. Li-ion, Li-poly)
+                  MiniIconTelemetryCard(
                     title: 'Technology',
-                    valueText: 'Li-ion',
-                    icon: Icon(
+                    valueText: reading.technology.isNotEmpty ? reading.technology : 'Li-ion',
+                    icon: const Icon(
                       Icons.memory,
                       color: Color(0xFF8B5CF6),
                       size: 28,
                     ),
                   ),
 
-                  // 9. Max Capacity Card
+                  // 9. Max Capacity Card (Dynamic device design capacity)
                   MiniIconTelemetryCard(
                     title: 'Max Capacity',
-                    valueText: '$designCap mAh',
+                    valueText: designCap > 0 ? '$designCap mAh' : '--',
                     icon: const Icon(
                       Icons.battery_saver,
                       color: Color(0xFF10B981),
@@ -474,40 +625,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 width: double.infinity,
                 child: FilledButton.icon(
                   icon: Icon(_isTrackingSession ? Icons.stop : Icons.play_arrow),
-                  label: Text(_isTrackingSession ? 'Stop Charging Session' : 'Start Session Tracking'),
+                  label: Text(_isTrackingSession ? 'Stop Charging Monitor' : 'Start Background Monitor'),
                   style: FilledButton.styleFrom(
                     backgroundColor: _isTrackingSession ? Colors.redAccent : null,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: () async {
+                    final running = await BatteryService().toggleManualTracking();
+                    if (!mounted) return;
                     setState(() {
-                      _isTrackingSession = !_isTrackingSession;
+                      _isTrackingSession = running;
                     });
-                    if (_isTrackingSession) {
-                      _sessionStartTime = DateTime.now();
-                      _sessionStartPct = reading.percent;
-                      await BatteryService().startForegroundService();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Session tracking started in background!')),
-                        );
-                      }
-                    } else {
-                      await BatteryService().stopForegroundService();
-                      final durMinutes = _sessionStartTime != null
-                          ? DateTime.now().difference(_sessionStartTime!).inMinutes
-                          : 0;
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Session logged: ${_sessionStartPct ?? 0}% → ${reading.percent}% (${durMinutes}m elapsed)',
-                            ),
-                          ),
-                        );
-                      }
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          running
+                              ? 'Foreground battery monitor started!'
+                              : 'Foreground battery monitor stopped.',
+                        ),
+                      ),
+                    );
                   },
                 ),
               ),

@@ -1,5 +1,5 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-// Note: Normally import google_mobile_ads here. Placeholder for AdMob banner.
 
 class AdmobBanner extends StatelessWidget {
   final bool isPro;
@@ -8,7 +8,7 @@ class AdmobBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isPro) return const SizedBox.shrink();
+    if (!kReleaseMode || isPro) return const SizedBox.shrink();
     
     return Container(
       width: double.infinity,

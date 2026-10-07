@@ -1,4 +1,4 @@
-package chargeeasy.app
+package chargetracker.app
 
 import android.app.usage.UsageStatsManager
 import android.content.Context

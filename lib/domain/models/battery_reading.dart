@@ -20,6 +20,10 @@ class BatteryReading with _$BatteryReading {
     required PlugType plugType,
     required BatteryHealth health,
     required DateTime timestamp,
+    @Default('Li-ion') String technology,
+    @Default(0) int designCapacityMah,
+    @Default(0) int chargeCounterUah,
+    @Default(-1) int chargeTimeRemainingMs,
   }) = _BatteryReading;
 
   factory BatteryReading.fromJson(Map<String, dynamic> json) => _$BatteryReadingFromJson(json);
