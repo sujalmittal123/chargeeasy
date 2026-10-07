@@ -3,6 +3,7 @@ name: Android Release Build (APK + AAB)
 on:
   push:
     tags:
+      - 'v*'
       - 'v*.*.*'
     branches:
       - main
@@ -125,22 +126,24 @@ jobs:
 
           # Copy to release folder with versioned names
           mkdir -p build/dist
-          cp build/app/outputs/flutter-apk/app-release.apk build/dist/chargeeasy-v${{ steps.get_version.outputs.version_name }}+${{ steps.get_version.outputs.version_code }}.apk
-          cp build/app/outputs/bundle/release/app-release.aab build/dist/chargeeasy-v${{ steps.get_version.outputs.version_name }}+${{ steps.get_version.outputs.version_code }}.aab
+          cp build/app/outputs/flutter-apk/app-release.apk build/dist/ChargeTracker-v${{ steps.get_version.outputs.version_name }}.apk
+          cp build/app/outputs/bundle/release/app-release.aab build/dist/ChargeTracker-v${{ steps.get_version.outputs.version_name }}.aab
 
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: chargeeasy-release-v${{ steps.get_version.outputs.version_name }}
+          name: ChargeTracker-release-v${{ steps.get_version.outputs.version_name }}
           path: |
             build/dist/*.apk
             build/dist/*.aab
           retention-days: 30
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_github_release == 'true'
+        if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.event.inputs.create_github_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.get_version.outputs.version_name }}
+          name: "Charge Tracker v${{ steps.get_version.outputs.version_name }}"
           files: |
             build/dist/*.apk
             build/dist/*.aab

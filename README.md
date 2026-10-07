@@ -17,6 +17,19 @@
   <img src="https://img.shields.io/badge/Internet%20Permission-NONE-brightgreen" alt="No Internet" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/sujalmittal123/chargeeasy/releases/latest">
+    <img src="https://img.shields.io/badge/📥_Download_Latest_APK-v1.0.4-00E5FF?style=for-the-badge&logo=android&logoColor=black" alt="Download APK" />
+  </a>
+</p>
+
+---
+
+## 📥 Download APK
+You can download the compiled and signed release APK directly from GitHub:
+- **Latest Release**: [Download ChargeTracker-v1.0.4.apk](https://github.com/sujalmittal123/chargeeasy/releases/latest)
+- **All Versions**: [View All GitHub Releases](https://github.com/sujalmittal123/chargeeasy/releases)
+
 ---
 
 ## 📖 Overview
