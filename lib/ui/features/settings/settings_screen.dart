@@ -236,6 +236,16 @@ class SettingsScreen extends ConsumerWidget {
             },
           ),
 
+          // 8. Home Screen Widgets
+          _buildActionCard(
+            context,
+            icon: Icons.dashboard_customize_outlined,
+            iconColor: const Color(0xFF00E5FF),
+            title: 'Home Screen Widgets',
+            subtitle: 'Transparent battery, watts, temp & health widgets',
+            onTap: () => context.push('/widgets'),
+          ),
+
           const SizedBox(height: 12),
           _buildSectionHeader('Hardware & Advanced Alarms', context),
 

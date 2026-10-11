@@ -236,7 +236,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
         actions: [
-          // 1. Crown / Stars button for Premium
+          // 1. Home Screen Widgets Button
+          IconButton(
+            icon: const Icon(
+              Icons.dashboard_customize_outlined,
+              color: Color(0xFF00E5FF),
+              size: 22,
+            ),
+            tooltip: 'Home Screen Widgets',
+            onPressed: () => context.push('/widgets'),
+          ),
+
+          // 2. Crown / Stars button for Premium
           IconButton(
             icon: Icon(
               Icons.stars,
@@ -247,19 +258,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onPressed: () => PremiumSubscriptionSheet.show(context),
           ),
 
-          // 2. Profile Button
+          // 3. Profile Button
           IconButton(
             icon: const Icon(Icons.account_circle_outlined, size: 26),
             tooltip: 'Profile',
             onPressed: () => context.push('/profile'),
           ),
 
-          // 3. Overflow Menu for Secondary Actions (Prevents AppBar overlap on all screen sizes)
+          // 4. Overflow Menu for Secondary Actions
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             tooltip: 'More options',
             onSelected: (value) {
               switch (value) {
+                case 'widgets':
+                  context.push('/widgets');
+                  break;
                 case 'calibration':
                   context.push('/calibration');
                   break;
@@ -280,6 +294,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'widgets',
+                child: Row(
+                  children: [
+                    Icon(Icons.dashboard_customize_outlined, size: 20, color: Color(0xFF00E5FF)),
+                    SizedBox(width: 12),
+                    Text('Home Screen Widgets'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'calibration',
                 child: Row(
@@ -618,7 +642,52 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: SparklineChart(dataPoints: _powerHistory),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              // Home Screen Widgets Card
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                      const Color(0xFF10B981).withValues(alpha: 0.06),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.widgets_outlined,
+                      color: Color(0xFF00E5FF),
+                      size: 22,
+                    ),
+                  ),
+                  title: const Text(
+                    'Home Screen Widgets',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  subtitle: const Text(
+                    'Add transparent live battery, watts & health widgets',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Color(0xFF00E5FF)),
+                  onTap: () => context.push('/widgets'),
+                ),
+              ),
+
+              const SizedBox(height: 12),
 
               // Start / Stop Session Action Button
               SizedBox(

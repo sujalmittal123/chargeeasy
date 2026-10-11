@@ -259,13 +259,24 @@ class ChargingForegroundService : Service() {
             if (speedLabel.isNotEmpty()) append(" · $speedLabel")
         }
 
+        val isCharging = isTracking || status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+        val voltageV = voltageMv / 1000.0f
+        val healthInt = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_GOOD)
+        val healthStr = if (healthInt == BatteryManager.BATTERY_HEALTH_GOOD) "Good" else "Normal"
+
         prefs.edit()
             .putInt("last_percent", percent)
             .putInt("last_current", currentMa)
             .putFloat("last_watts", watts.toFloat())
             .putFloat("last_temp", tempC.toFloat())
+            .putFloat("last_voltage", voltageV)
+            .putString("last_health_str", healthStr)
+            .putBoolean("last_is_charging", isCharging)
+            .putString("last_estimate_str", if (isCharging) (if (speedLabel.isNotEmpty()) "$speedLabel charging" else "Charging") else "Discharging")
             .putLong("last_update", System.currentTimeMillis())
             .apply()
+
+        ChargeTrackerWidget.updateAllWidgets(this)
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIFICATION_ID, buildMonitorNotification(title, content))

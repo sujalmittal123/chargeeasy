@@ -16,6 +16,7 @@ import '../features/settings/settings_screen.dart';
 import '../features/calibration/calibration_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/premium/premium_subscription_sheet.dart';
+import '../features/widgets/widgets_config_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
@@ -106,6 +107,10 @@ final goRouter = GoRouter(
     GoRoute(
       path: '/profile',
       builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: '/widgets',
+      builder: (context, state) => const WidgetsConfigScreen(),
     ),
     GoRoute(
       path: '/premium',

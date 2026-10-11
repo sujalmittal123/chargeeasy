@@ -18,6 +18,8 @@ import java.io.BufferedReader
 import java.io.FileReader
 import android.os.Handler
 import android.os.Looper
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 
 class BatteryPlugin(private val context: Context) : MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
@@ -128,6 +130,71 @@ class BatteryPlugin(private val context: Context) : MethodChannel.MethodCallHand
                     "emui" to false
                 )
                 result.success(map)
+            }
+            "isPinningSupported" -> {
+                val wm = AppWidgetManager.getInstance(context)
+                val supported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && wm.isRequestPinAppWidgetSupported
+                result.success(supported)
+            }
+            "requestPinWidget" -> {
+                val widgetType = call.argument<String>("type") ?: "2x1"
+                val wm = AppWidgetManager.getInstance(context)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && wm.isRequestPinAppWidgetSupported) {
+                    val cls = if (widgetType == "4x2") ChargeTrackerWidgetLarge::class.java else ChargeTrackerWidget::class.java
+                    val provider = ComponentName(context, cls)
+                    val success = wm.requestPinAppWidget(provider, null, null)
+                    result.success(success)
+                } else {
+                    result.success(false)
+                }
+            }
+            "setWidgetTransparentTheme" -> {
+                val isTransparent = call.argument<Boolean>("isTransparent") ?: true
+                prefs.edit().putBoolean("widget_transparent_theme", isTransparent).apply()
+                ChargeTrackerWidget.updateAllWidgets(context)
+                result.success(true)
+            }
+            "getWidgetTransparentTheme" -> {
+                val isTransparent = prefs.getBoolean("widget_transparent_theme", true)
+                result.success(isTransparent)
+            }
+            "syncWidgetData" -> {
+                val args = call.arguments as? Map<String, Any> ?: run {
+                    result.success(false)
+                    return
+                }
+                val editor = prefs.edit()
+                args["percent"]?.let { if (it is Int) editor.putInt("last_percent", it) }
+                args["currentMa"]?.let { if (it is Int) editor.putInt("last_current", it) }
+                args["watts"]?.let {
+                    when (it) {
+                        is Double -> editor.putFloat("last_watts", it.toFloat())
+                        is Float -> editor.putFloat("last_watts", it)
+                    }
+                }
+                args["temperatureC"]?.let {
+                    when (it) {
+                        is Double -> editor.putFloat("last_temp", it.toFloat())
+                        is Float -> editor.putFloat("last_temp", it)
+                    }
+                }
+                args["voltageV"]?.let {
+                    when (it) {
+                        is Double -> editor.putFloat("last_voltage", it.toFloat())
+                        is Float -> editor.putFloat("last_voltage", it)
+                    }
+                }
+                args["health"]?.let { if (it is String) editor.putString("last_health_str", it) }
+                args["isCharging"]?.let { if (it is Boolean) editor.putBoolean("last_is_charging", it) }
+                args["estimate"]?.let { if (it is String) editor.putString("last_estimate_str", it) }
+                editor.putLong("last_update", System.currentTimeMillis()).apply()
+                ChargeTrackerWidget.updateAllWidgets(context)
+                result.success(true)
+            }
+            "refreshWidgets" -> {
+                ChargeTrackerWidget.refreshBatterySnapshot(context)
+                ChargeTrackerWidget.updateAllWidgets(context)
+                result.success(true)
             }
             else -> result.notImplemented()
         }
