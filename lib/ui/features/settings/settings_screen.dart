@@ -318,7 +318,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 applicationName: 'Charge Tracker',
-                applicationVersion: '1.0.6 (Build 7)',
+                applicationVersion: '1.0.7 (Build 8)',
                 applicationLegalese: '© 2026 Charge Tracker Team. Pure offline-first battery analytics.',
                 children: [
                   const SizedBox(height: 12),
